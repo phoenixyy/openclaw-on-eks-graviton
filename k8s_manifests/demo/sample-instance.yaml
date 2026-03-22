@@ -1,22 +1,41 @@
-# Sample OpenClawInstance — for testing Operator + Karpenter + EFS
-# Apply this after Operator is installed to verify end-to-end flow
+# Demo: Create namespace + secret + OpenClawInstance
+# Run these commands to test the full flow manually:
+#
+#   kubectl apply -f k8s_manifests/demo/sample-instance.yaml
+#   kubectl get openclawinstances -n openclaw-demo
+#   kubectl get pods -n openclaw-demo
+#
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openclaw-demo
+  labels:
+    openclaw.rocks/tenant: "demo"
+---
+# Create the API key secret before applying:
+#   kubectl create secret generic openclaw-api-keys \
+#     -n openclaw-demo \
+#     --from-literal=ANTHROPIC_API_KEY="sk-ant-..."
+#
+# Or for Bedrock (no API key needed — uses Pod Identity):
+#   kubectl create secret generic openclaw-api-keys \
+#     -n openclaw-demo \
+#     --from-literal=PLACEHOLDER="bedrock-via-pod-identity"
+---
 apiVersion: openclaw.rocks/v1alpha1
 kind: OpenClawInstance
 metadata:
   name: demo-agent
   namespace: openclaw-demo
 spec:
-  # Model configuration
+  # Model configuration — Bedrock Claude via Pod Identity
   config:
     raw:
       agents:
         defaults:
           model:
             primary: "amazon-bedrock/ap-northeast-1.anthropic.claude-sonnet-4-20250514-v1:0"
-  # API keys from Secret
-  envFrom:
-    - secretRef:
-        name: openclaw-api-keys
   # Persistent storage via EFS
   storage:
     persistence:
@@ -31,8 +50,3 @@ spec:
       effect: NoSchedule
   nodeSelector:
     role: agent
-  # Security hardening (Operator defaults, explicit for documentation)
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 1000
-    runAsGroup: 1000

@@ -50,6 +50,8 @@ class StorageConfig:
     throughput_mode: str = "elastic"
     # Encryption at rest
     encrypted: bool = True
+    # ⚠️ DESTROY for PoC (clean teardown). Set to "RETAIN" for production!
+    removal_policy: str = "DESTROY"
 
 
 @dataclass
@@ -89,6 +91,8 @@ class PlatformConfig:
     network: NetworkConfig = field(default_factory=NetworkConfig)
     bedrock: BedrockConfig = field(default_factory=BedrockConfig)
     operator: OperatorConfig = field(default_factory=OperatorConfig)
+    # Helm chart versions (pinned for reproducibility)
+    alb_controller_chart_version: str = "1.12.0"
     # Tags applied to all resources
     tags: dict = field(default_factory=lambda: {
         "Project": "openclaw-on-eks-graviton",

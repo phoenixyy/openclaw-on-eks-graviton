@@ -6,11 +6,11 @@ Deploys a multi-tenant AI Agent platform on Amazon EKS with Graviton (ARM64).
 
 Usage:
     cdk deploy FoundationStack      # VPC + EKS + EFS + Karpenter (~25 min)
-    cdk deploy PlatformStack        # Operator + IAM + CloudFront (~15 min)
     cdk deploy --all                # Everything
     cdk destroy --all               # Clean up
 """
 
+import os
 import aws_cdk as cdk
 from cdk_stacks.config import config
 from cdk_stacks.foundation_stack import FoundationStack
@@ -18,8 +18,9 @@ from cdk_stacks.foundation_stack import FoundationStack
 
 app = cdk.App()
 
+# [FIX I2] Use CDK_DEFAULT_ACCOUNT/REGION for proper AZ resolution
 env = cdk.Environment(
-    account=app.node.try_get_context("account") or None,
+    account=os.environ.get("CDK_DEFAULT_ACCOUNT"),
     region=config.region,
 )
 
