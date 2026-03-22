@@ -1,0 +1,38 @@
+# Sample OpenClawInstance — for testing Operator + Karpenter + EFS
+# Apply this after Operator is installed to verify end-to-end flow
+apiVersion: openclaw.rocks/v1alpha1
+kind: OpenClawInstance
+metadata:
+  name: demo-agent
+  namespace: openclaw-demo
+spec:
+  # Model configuration
+  config:
+    raw:
+      agents:
+        defaults:
+          model:
+            primary: "amazon-bedrock/ap-northeast-1.anthropic.claude-sonnet-4-20250514-v1:0"
+  # API keys from Secret
+  envFrom:
+    - secretRef:
+        name: openclaw-api-keys
+  # Persistent storage via EFS
+  storage:
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClassName: efs-sc
+  # Schedule on Karpenter agent nodes
+  tolerations:
+    - key: openclaw.rocks/agent-workload
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+  nodeSelector:
+    role: agent
+  # Security hardening (Operator defaults, explicit for documentation)
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
