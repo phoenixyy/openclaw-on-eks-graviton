@@ -27,6 +27,30 @@ from aws_cdk.lambda_layer_kubectl_v32 import KubectlV32Layer
 from .config import config
 
 
+def _make_pod_identity_role(scope, id: str, description: str) -> iam.Role:
+    """Create IAM Role for EKS Pod Identity with correct trust policy.
+    
+    Pod Identity requires both sts:AssumeRole AND sts:TagSession in the
+    trust policy. CDK's ServicePrincipal only adds AssumeRole, causing
+    PodIdentityAssociation to fail with 'Trust policy invalid'.
+    We add sts:TagSession after role creation.
+    """
+    role = iam.Role(
+        scope, id,
+        assumed_by=iam.ServicePrincipal("pods.eks.amazonaws.com"),
+        description=description,
+    )
+    # Add sts:TagSession to trust policy (required by Pod Identity)
+    role.assume_role_policy.add_statements(
+        iam.PolicyStatement(
+            effect=iam.Effect.ALLOW,
+            principals=[iam.ServicePrincipal("pods.eks.amazonaws.com")],
+            actions=["sts:TagSession"],
+        ),
+    )
+    return role
+
+
 class FoundationStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
@@ -105,7 +129,7 @@ class FoundationStack(Stack):
             capacity_type=eks.CapacityType.ON_DEMAND,
             labels={
                 "role": "system",
-                "kubernetes.io/arch": "arm64",
+                # Note: kubernetes.io/arch is auto-set by kubelet, don't set manually
             },
             taints=[
                 eks.TaintSpec(
@@ -139,9 +163,8 @@ class FoundationStack(Stack):
         )
 
         # [FIX C1] EFS CSI Driver — needs IAM role for Access Point creation
-        efs_csi_role = iam.Role(
+        efs_csi_role = _make_pod_identity_role(
             self, "EfsCsiDriverRole",
-            assumed_by=iam.ServicePrincipal("pods.eks.amazonaws.com"),
             description="EFS CSI Driver - create/delete Access Points for tenant PVCs",
         )
         efs_csi_role.add_to_policy(iam.PolicyStatement(
@@ -246,9 +269,8 @@ class FoundationStack(Stack):
         karpenter_ns = "kube-system"
         karpenter_sa = "karpenter"
 
-        karpenter_controller_role = iam.Role(
+        karpenter_controller_role = _make_pod_identity_role(
             self, "KarpenterControllerRole",
-            assumed_by=iam.ServicePrincipal("pods.eks.amazonaws.com"),
             description="Karpenter controller role for node provisioning",
         )
 
@@ -397,9 +419,8 @@ class FoundationStack(Stack):
         alb_ns = "kube-system"
         alb_sa = "aws-load-balancer-controller"
 
-        alb_role = iam.Role(
+        alb_role = _make_pod_identity_role(
             self, "AlbControllerRole",
-            assumed_by=iam.ServicePrincipal("pods.eks.amazonaws.com"),
             description="AWS Load Balancer Controller role",
         )
 
