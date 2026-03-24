@@ -495,6 +495,10 @@ class ApplicationStack(Stack):
 
         # ConfigMap — uses self.bedrock_role.role_arn (ApplicationStack resource)
         # This is why we use _add_manifest() instead of cluster.add_manifest()
+        # CloudFront domain and instances ALB DNS come from CdnStack or context
+        cloudfront_domain = self.node.try_get_context("cloudfront_domain") or ""
+        instances_alb_dns = self.node.try_get_context("instances_alb_dns") or ""
+
         cm = self._add_manifest("ProvisioningConfigMap", {
             "apiVersion": "v1",
             "kind": "ConfigMap",
@@ -514,6 +518,9 @@ class ApplicationStack(Stack):
                 "OPENCLAW_MODEL": cfg.bedrock.default_model,
                 # Internal ALB for OpenClaw instances (accessed via CloudFront VPC Origin)
                 "USE_PUBLIC_ALB": "true",
+                # CloudFront and ALB endpoints (set via context or after CdnStack deployment)
+                "CLOUDFRONT_DOMAIN": cloudfront_domain,
+                "PUBLIC_ALB_DNS": instances_alb_dns,
             },
         })
         cm.node.add_dependency(ns_manifest)

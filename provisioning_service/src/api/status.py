@@ -298,10 +298,11 @@ def list_instances():
                     labels = instance.get('metadata', {}).get('labels', {})
                     llm_provider = labels.get('openclaw.rocks/llm-provider', 'bedrock')
 
-                    # Get model from spec
+                    # Get model from spec.config.raw.agents.defaults.model.primary
                     spec = instance.get('spec', {})
-                    model_config = spec.get('model', {})
-                    model_name = model_config.get('name', 'Unknown')
+                    model_full = spec.get('config', {}).get('raw', {}).get('agents', {}).get('defaults', {}).get('model', {}).get('primary', '')
+                    # Extract just the model ID part (after the last '/')
+                    model_name = model_full.split('/')[-1] if model_full else 'Unknown'
 
                     # Check readiness
                     pods_ready = False

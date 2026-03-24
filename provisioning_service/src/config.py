@@ -61,7 +61,7 @@ class Config:
         },
         'storage_size': os.environ.get('OPENCLAW_STORAGE_SIZE', '10Gi'),
         'storage_class': os.environ.get('OPENCLAW_STORAGE_CLASS', 'efs-sc'),
-        'model': os.environ.get('OPENCLAW_MODEL', 'amazon-bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0'),
+        'model': os.environ.get('OPENCLAW_MODEL', 'amazon-bedrock/jp.anthropic.claude-sonnet-4-5-20250929-v1:0'),
         'aws_credentials_secret': os.environ.get('OPENCLAW_AWS_CREDENTIALS_SECRET', 'aws-credentials'),
         'image': {
             'repository': os.environ.get('OPENCLAW_IMAGE_REPOSITORY', 'ghcr.io/openclaw/openclaw'),
@@ -81,8 +81,8 @@ class Config:
 
     # Available Bedrock models for user selection
     BEDROCK_MODELS = [
-        {'id': 'amazon-bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0', 'name': 'Claude Sonnet 4.5', 'provider_label': 'Anthropic', 'default': True},
-        {'id': 'amazon-bedrock/us.amazon.nova-pro-v1:0', 'name': 'Amazon Nova Pro', 'provider_label': 'Amazon'},
+        {'id': 'amazon-bedrock/jp.anthropic.claude-sonnet-4-5-20250929-v1:0', 'name': 'Claude Sonnet 4.5', 'provider_label': 'Anthropic', 'default': True},
+        {'id': 'amazon-bedrock/apac.amazon.nova-pro-v1:0', 'name': 'Amazon Nova Pro', 'provider_label': 'Amazon'},
     ]
 
     # Available SiliconFlow models for user selection

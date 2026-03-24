@@ -118,11 +118,10 @@ const API = {
         }
         return {
             bedrock: [
-                {id: 'amazon-bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0', name: 'Claude Sonnet 4.5', provider_label: 'Anthropic', default: true},
-                {id: 'amazon-bedrock/us.anthropic.claude-opus-4-20250514-v1:0', name: 'Claude Opus 4', provider_label: 'Anthropic'},
-                {id: 'amazon-bedrock/us.anthropic.claude-haiku-4-5-20251001-v1:0', name: 'Claude Haiku 4.5', provider_label: 'Anthropic'},
-                {id: 'amazon-bedrock/us.meta.llama3-3-70b-instruct-v1:0', name: 'Llama 3.3 70B', provider_label: 'Meta'},
-                {id: 'amazon-bedrock/us.amazon.nova-pro-v1:0', name: 'Amazon Nova Pro', provider_label: 'Amazon'},
+                {id: 'amazon-bedrock/jp.anthropic.claude-sonnet-4-5-20250929-v1:0', name: 'Claude Sonnet 4.5', provider_label: 'Anthropic', default: true},
+                {id: 'amazon-bedrock/global.anthropic.claude-opus-4-6-v1', name: 'Claude Opus 4.6', provider_label: 'Anthropic'},
+                {id: 'amazon-bedrock/jp.anthropic.claude-haiku-4-5-20251001-v1:0', name: 'Claude Haiku 4.5', provider_label: 'Anthropic'},
+                {id: 'amazon-bedrock/apac.amazon.nova-pro-v1:0', name: 'Amazon Nova Pro', provider_label: 'Amazon'},
             ],
             siliconflow: [
                 {id: 'Pro/deepseek-ai/DeepSeek-V3', name: 'DeepSeek V3', provider_label: 'DeepSeek', default: true},

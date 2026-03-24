@@ -386,6 +386,105 @@
             font-size: 0.9rem;
         }
 
+        /* Instance Card Details (Expandable) */
+        .instance-card-body {
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .instance-card-body:hover {
+            background: rgba(0, 212, 255, 0.03);
+            border-radius: 8px;
+        }
+
+        .instance-details-section {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, margin 0.3s ease;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        .instance-details-section.expanded {
+            max-height: 600px;
+            opacity: 1;
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+
+        .instance-details-content {
+            padding: 20px;
+            background: rgba(10, 14, 26, 0.6);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(139, 147, 167, 0.1);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-row-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .detail-row-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-align: right;
+            word-break: break-all;
+        }
+
+        .detail-row-value a {
+            color: var(--cyber-cyan);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .detail-row-value a:hover {
+            color: var(--plasma-orange);
+            text-decoration: underline;
+        }
+
+        .detail-row-value code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: var(--cyber-cyan);
+        }
+
+        .expand-indicator {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 8px 0;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.05em;
+        }
+
+        .expand-indicator::after {
+            content: '▼ Click to expand details';
+        }
+
+        .instance-card.expanded .expand-indicator::after {
+            content: '▲ Click to collapse details';
+        }
+
         .empty-icon {
             font-size: 6rem;
             margin-bottom: 24px;

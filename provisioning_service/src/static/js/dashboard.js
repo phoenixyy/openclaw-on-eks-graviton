@@ -488,13 +488,26 @@ const Dashboard = {
         const providerIcon = instance.provider === 'siliconflow' ? '🤖' : '☁️';
         const providerName = instance.provider === 'siliconflow' ? 'SiliconFlow' : 'Bedrock';
 
+        // Format full ISO created date
+        const createdDateISO = instance.created_at ? new Date(instance.created_at).toISOString() : 'Unknown';
+
+        // Gateway URL
+        const gatewayUrl = instance.cloudfront_http_url || 'Not available yet';
+        const gatewayUrlHtml = instance.cloudfront_http_url
+            ? `<a href="${this.escapeHtml(gatewayUrl)}" target="_blank">${this.escapeHtml(gatewayUrl)}</a>`
+            : gatewayUrl;
+
+        // Ready status
+        const readyStatus = instance.ready_for_connect ? 'Ready' : 'Not Ready';
+        const readyStatusClass = instance.ready_for_connect ? 'status-running' : 'status-pending';
+
         // Build card HTML
         card.innerHTML = `
             <div class="instance-card-header">
                 <h3 class="instance-card-title">${this.escapeHtml(instance.display_name || instance.instance_id)}</h3>
                 <span class="status-badge ${statusClass}">${statusText}</span>
             </div>
-            <div class="instance-card-body">
+            <div class="instance-card-body" data-expandable>
                 <div class="instance-info-row">
                     <span class="instance-info-label">Instance ID</span>
                     <span class="instance-info-value">${this.escapeHtml(instance.instance_id)}</span>
@@ -510,6 +523,47 @@ const Dashboard = {
                 <div class="instance-info-row">
                     <span class="instance-info-label">Created</span>
                     <span class="instance-info-value">${createdDate}</span>
+                </div>
+                <div class="expand-indicator"></div>
+            </div>
+            <div class="instance-details-section">
+                <div class="instance-details-content">
+                    <div class="detail-row">
+                        <span class="detail-row-label">Instance ID (Full)</span>
+                        <span class="detail-row-value"><code>${this.escapeHtml(instance.instance_id)}</code></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-row-label">Display Name</span>
+                        <span class="detail-row-value">${this.escapeHtml(instance.display_name || 'N/A')}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-row-label">Status</span>
+                        <span class="detail-row-value"><span class="status-badge ${statusClass}">${statusText}</span></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-row-label">Provider</span>
+                        <span class="detail-row-value">${providerIcon} ${providerName}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-row-label">Model</span>
+                        <span class="detail-row-value">${this.escapeHtml(instance.model || 'Unknown')}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-row-label">Created At (ISO)</span>
+                        <span class="detail-row-value"><code>${this.escapeHtml(createdDateISO)}</code></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-row-label">Gateway URL</span>
+                        <span class="detail-row-value">${gatewayUrlHtml}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-row-label">Namespace</span>
+                        <span class="detail-row-value"><code>${this.escapeHtml(instance.namespace || 'N/A')}</code></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-row-label">Ready Status</span>
+                        <span class="detail-row-value"><span class="status-badge ${readyStatusClass}">${readyStatus}</span></span>
+                    </div>
                 </div>
             </div>
             <div class="instance-card-actions">
@@ -528,13 +582,36 @@ const Dashboard = {
         const connectBtn = card.querySelector('[data-action="connect"]');
         const deleteBtn = card.querySelector('[data-action="delete"]');
 
-        connectBtn.addEventListener('click', () => {
+        connectBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent expand/collapse
             this.handleConnectInstance(instance);
         });
 
-        deleteBtn.addEventListener('click', () => {
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent expand/collapse
             this.handleDeleteInstance(instance);
         });
+
+        // Add expand/collapse functionality
+        const cardBody = card.querySelector('[data-expandable]');
+        const detailsSection = card.querySelector('.instance-details-section');
+
+        if (cardBody && detailsSection) {
+            cardBody.addEventListener('click', () => {
+                // Toggle expanded state
+                const isExpanded = card.classList.contains('expanded');
+
+                if (isExpanded) {
+                    // Collapse
+                    card.classList.remove('expanded');
+                    detailsSection.classList.remove('expanded');
+                } else {
+                    // Expand
+                    card.classList.add('expanded');
+                    detailsSection.classList.add('expanded');
+                }
+            });
+        }
 
         return card;
     },

@@ -20,7 +20,7 @@ def create_network_policy(k8s_client, namespace):
         metadata=client.V1ObjectMeta(name="openclaw-netpol"),
         spec=client.V1NetworkPolicySpec(
             pod_selector=client.V1LabelSelector(
-                match_labels={"app.kubernetes.io/component": "openclaw"}
+                match_labels={"app.kubernetes.io/name": "openclaw"}
             ),
             policy_types=["Ingress", "Egress"],
             ingress=[
@@ -50,6 +50,14 @@ def create_network_policy(k8s_client, namespace):
                 client.V1NetworkPolicyEgressRule(
                     to=[client.V1NetworkPolicyPeer(ip_block=client.V1IPBlock(cidr="0.0.0.0/0"))],
                     ports=[client.V1NetworkPolicyPort(protocol="TCP", port=443)]
+                ),
+                # Pod Identity Agent
+                client.V1NetworkPolicyEgressRule(
+                    to=[client.V1NetworkPolicyPeer(ip_block=client.V1IPBlock(cidr="169.254.170.23/32"))],
+                    ports=[
+                        client.V1NetworkPolicyPort(protocol="TCP", port=80),
+                        client.V1NetworkPolicyPort(protocol="TCP", port=2703)
+                    ]
                 )
             ]
         )

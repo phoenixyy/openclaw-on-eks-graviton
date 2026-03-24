@@ -43,7 +43,8 @@ def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito
         config_raw = {
             "gateway": {
                 "controlUi": {
-                    "allowedOrigins": Config.GATEWAY_CONFIG["allowedOrigins"]
+                    "allowedOrigins": Config.GATEWAY_CONFIG["allowedOrigins"],
+                    "dangerouslyDisableDeviceAuth": True
                 },
                 "trustedProxies": Config.GATEWAY_CONFIG["trustedProxies"]
             },
@@ -77,7 +78,8 @@ def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito
         config_raw = {
             "gateway": {
                 "controlUi": {
-                    "allowedOrigins": Config.GATEWAY_CONFIG["allowedOrigins"]
+                    "allowedOrigins": Config.GATEWAY_CONFIG["allowedOrigins"],
+                    "dangerouslyDisableDeviceAuth": True
                 },
                 "trustedProxies": Config.GATEWAY_CONFIG["trustedProxies"]
             },
@@ -89,7 +91,7 @@ def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito
                         "auth": "aws-sdk",
                         "models": [
                             {
-                                "id": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+                                "id": "jp.anthropic.claude-sonnet-4-5-20250929-v1:0",
                                 "name": "Claude Sonnet 4.5",
                                 "reasoning": True,
                                 "input": ["text", "image"],
@@ -97,29 +99,22 @@ def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito
                                 "maxTokens": 16384
                             },
                             {
-                                "id": "us.anthropic.claude-opus-4-20250514-v1:0",
-                                "name": "Claude Opus 4",
+                                "id": "global.anthropic.claude-opus-4-6-v1",
+                                "name": "Claude Opus 4.6",
                                 "reasoning": True,
                                 "input": ["text", "image"],
                                 "contextWindow": 200000,
                                 "maxTokens": 32000
                             },
                             {
-                                "id": "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                                "id": "jp.anthropic.claude-haiku-4-5-20251001-v1:0",
                                 "name": "Claude Haiku 4.5",
                                 "input": ["text", "image"],
                                 "contextWindow": 200000,
                                 "maxTokens": 8192
                             },
                             {
-                                "id": "us.meta.llama3-3-70b-instruct-v1:0",
-                                "name": "Llama 3.3 70B",
-                                "input": ["text"],
-                                "contextWindow": 128000,
-                                "maxTokens": 4096
-                            },
-                            {
-                                "id": "us.amazon.nova-pro-v1:0",
+                                "id": "apac.amazon.nova-pro-v1:0",
                                 "name": "Amazon Nova Pro",
                                 "input": ["text", "image"],
                                 "contextWindow": 300000,
@@ -209,7 +204,7 @@ def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito
                     "capabilities": {"drop": ["ALL"]}
                 },
                 "networkPolicy": {
-                    "enabled": True,
+                    "enabled": False,
                     "allowDNS": True
                 },
                 "rbac": rbac_config
