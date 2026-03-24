@@ -53,6 +53,8 @@ class CdnStack(Stack):
         alb_sg_id = self.node.try_get_context("alb_sg_id") or "sg-placeholder"
         alb_dns = self.node.try_get_context("alb_dns") or ""
         instances_alb_dns = self.node.try_get_context("instances_alb_dns") or ""
+        instances_alb_arn = self.node.try_get_context("instances_alb_arn") or ""
+        instances_alb_sg_id = self.node.try_get_context("instances_alb_sg_id") or "sg-placeholder"
 
         if not alb_arn or not alb_dns:
             raise ValueError(
@@ -94,11 +96,11 @@ class CdnStack(Stack):
         # Additional behaviors for /instance/* (optional)
         # -------------------------------------------------------
         additional_behaviors = {}
-        if instances_alb_dns:
+        if instances_alb_dns and instances_alb_arn:
             instances_alb = elbv2.ApplicationLoadBalancer.from_application_load_balancer_attributes(
                 self, "ImportedInstancesAlb",
-                load_balancer_arn="",  # placeholder, ARN not needed for DNS-only routing
-                security_group_id="sg-placeholder",
+                load_balancer_arn=instances_alb_arn,
+                security_group_id=instances_alb_sg_id,
                 load_balancer_dns_name=instances_alb_dns,
             )
             instances_origin = origins.VpcOrigin.with_application_load_balancer(
