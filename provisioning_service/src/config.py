@@ -41,6 +41,9 @@ class Config:
     # Kubernetes
     K8S_NAMESPACE_PREFIX = 'openclaw'
 
+    # VPC CIDR for NetworkPolicy (allows ALB health checks and traffic)
+    VPC_CIDR = os.environ.get('VPC_CIDR', '10.0.0.0/16')
+
     # OpenClaw Instance 默认配置 (支持环境变量覆盖)
     OPENCLAW_DEFAULTS = {
         'runtime_class': os.environ.get('OPENCLAW_RUNTIME_CLASS') or None,
