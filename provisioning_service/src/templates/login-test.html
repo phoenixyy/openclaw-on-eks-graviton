@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Cognito Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.7/dist/amazon-cognito-identity.min.js"></script>
+</head>
+<body>
+    <h2>Test Cognito Authentication</h2>
+    <form id="loginForm">
+        <input type="email" id="email" placeholder="Email" value="demo@openclaw.test"><br><br>
+        <input type="password" id="password" placeholder="Password" value="OpenClaw@Test123!"><br><br>
+        <button type="submit">Login</button>
+    </form>
+    <pre id="result"></pre>
+
+    <script>
+        // These values should be injected by the server template or loaded from /api/config
+        const poolData = {
+            UserPoolId: '{{ cognito_user_pool_id }}',
+            ClientId: '{{ cognito_client_id }}'
+        };
+        
+        const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultEl = document.getElementById('result');
+            
+            resultEl.textContent = 'Logging in...';
+            
+            const authenticationData = {
+                Username: email,
+                Password: password,
+            };
+            
+            const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
+            
+            const userData = {
+                Username: email,
+                Pool: userPool
+            };
+            
+            const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+            
+            cognitoUser.authenticateUser(authenticationDetails, {
+                onSuccess: function(result) {
+                    const idToken = result.getIdToken().getJwtToken();
+                    resultEl.textContent = 'Success!\nID Token: ' + idToken.substring(0, 50) + '...';
+                    console.log('Full result:', result);
+                },
+                onFailure: function(err) {
+                    resultEl.textContent = 'Error: ' + JSON.stringify(err, null, 2);
+                    console.error(err);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

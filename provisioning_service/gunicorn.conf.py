@@ -1,12 +1,19 @@
 """Gunicorn configuration"""
 import multiprocessing
+import sys
+
+# Add /tmp/pypackages to sys.path for hot-deployed packages (flask-sock, gevent)
+_extra = '/tmp/pypackages'
+if _extra not in sys.path:
+    sys.path.insert(0, _extra)
 
 # Binding
 bind = "0.0.0.0:8080"
 
 # Worker configuration
+# Use gevent for WebSocket support (flask-sock requires async worker)
 workers = multiprocessing.cpu_count() * 2 + 1
-worker_class = "sync"
+worker_class = "gevent"
 worker_connections = 1000
 timeout = 120
 keepalive = 5

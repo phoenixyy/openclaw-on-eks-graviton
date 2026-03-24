@@ -7,14 +7,14 @@ import os
 
 logger = logging.getLogger(__name__)
 
-def create_openclaw_instance(k8s_client, instance_id, namespace, user_email, cognito_sub=None, custom_config=None, role_arn=None, provider='bedrock', siliconflow_api_key=None, model=None):
+def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito_sub=None, custom_config=None, role_arn=None, provider='bedrock', siliconflow_api_key=None, model=None):
     """
     Create an OpenClawInstance CRD
 
     Args:
         k8s_client: K8sClient instance
-        instance_id: Instance ID (format: {user_id}-{seq}, e.g., 7ec7606c-01)
-        namespace: Namespace name (format: openclaw-{instance_id})
+        user_id: User ID
+        namespace: Namespace name
         user_email: User email address
         cognito_sub: Cognito Sub ID (optional)
         custom_config: Custom configuration to override defaults (optional)
@@ -26,13 +26,15 @@ def create_openclaw_instance(k8s_client, instance_id, namespace, user_email, cog
     Returns:
         Tuple of (instance, created)
     """
-    instance_name = f"openclaw-{instance_id}"
-    user_id = instance_id.split('-')[0]  # Extract user_id from instance_id for backward compatibility
+    instance_name = f"openclaw-{user_id}"
 
     # Merge configuration (custom_config overrides defaults)
     config = copy.deepcopy(Config.OPENCLAW_DEFAULTS)
+    logger.info(f"🔍 DEFAULTS runtime_class={config.get('runtime_class')}, node_selector={config.get('node_selector')}")
+    logger.info(f"🔍 custom_config received: {custom_config}")
     if custom_config:
         _deep_merge(config, custom_config)
+    logger.info(f"🔍 MERGED runtime_class={config.get('runtime_class')}, node_selector={config.get('node_selector')}")
 
     # Build config.raw based on provider
     if provider == 'siliconflow':
@@ -142,8 +144,7 @@ def create_openclaw_instance(k8s_client, instance_id, namespace, user_email, cog
 
     # Build labels
     labels = {
-        "openclaw.rocks/instance-id": instance_id,
-        "openclaw.rocks/user-id": user_id,  # Keep for backward compatibility
+        "openclaw.rocks/user-id": user_id,
         "app.kubernetes.io/managed-by": "openclaw-provisioning-service",
         "openclaw.rocks/llm-provider": provider
     }
@@ -193,7 +194,7 @@ def create_openclaw_instance(k8s_client, instance_id, namespace, user_email, cog
                 "service": {
                     "type": "ClusterIP"
                 },
-                "ingress": _build_ingress_config(instance_id) if Config.INGRESS_ENABLED else {"enabled": False}
+                "ingress": _build_ingress_config(user_id) if Config.INGRESS_ENABLED else {"enabled": False}
             },
             "security": {
                 "podSecurityContext": {
@@ -257,7 +258,7 @@ def create_openclaw_instance(k8s_client, instance_id, namespace, user_email, cog
             "name": "billing-sidecar",
             "image": Config.BILLING_SIDECAR_IMAGE,
             "env": [
-                {"name": "TENANT_ID", "value": instance_id},
+                {"name": "TENANT_ID", "value": user_id},
                 {"name": "DATABASE_URL", "value": database_url},
                 {"name": "OPENCLAW_SESSIONS_DIR", "value": "/home/openclaw/.openclaw/agents"},
                 {"name": "POLL_INTERVAL", "value": "5"},
@@ -275,7 +276,7 @@ def create_openclaw_instance(k8s_client, instance_id, namespace, user_email, cog
             },
         }
         instance_body["spec"].setdefault("sidecars", []).append(billing_sidecar)
-        logger.info(f"✅ Billing sidecar injected for instance {instance_id}")
+        logger.info(f"✅ Billing sidecar injected for user {user_id}")
 
     # Add cognito_sub if provided
     if cognito_sub:
@@ -302,7 +303,7 @@ def create_openclaw_instance(k8s_client, instance_id, namespace, user_email, cog
     return k8s_client.create_or_get(create, get, f"OpenClawInstance {instance_name}")
 
 
-def _build_ingress_config(instance_id):
+def _build_ingress_config(user_id):
     """
     Build Ingress configuration for Public ALB behind CloudFront (NEW) or Internal ALB via API Gateway (OLD)
 
@@ -313,7 +314,7 @@ def _build_ingress_config(instance_id):
       User → API Gateway (JWT auth) → VPC Link → Internal ALB → OpenClaw
 
     Args:
-        instance_id: Instance ID for generating unique path
+        user_id: User ID for generating unique path
 
     Returns:
         Dict: Ingress configuration
@@ -327,21 +328,21 @@ def _build_ingress_config(instance_id):
                 # Merge Public ALB annotations
                 **Config.PUBLIC_ALB_INGRESS_ANNOTATIONS,
                 # Override healthcheck path
-                f"{Config.INGRESS_CLASS}.ingress.kubernetes.io/healthcheck-path": f"/instance/{instance_id}/",
+                f"{Config.INGRESS_CLASS}.ingress.kubernetes.io/healthcheck-path": f"/instance/{user_id}/",
             },
             # Host-based routing with CloudFront domain
             "hosts": [{
                 "host": Config.CLOUDFRONT_DOMAIN,
                 "paths": [{
-                    "path": f"/instance/{instance_id}",
+                    "path": f"/instance/{user_id}",
                     "pathType": "Prefix"
                 }]
             }]
         }
 
-        logger.info(f"✅ Public ALB Ingress configured for instance {instance_id} - path: /instance/{instance_id}")
-        logger.info(f"   Access via CloudFront: https://{Config.CLOUDFRONT_DOMAIN}/instance/{instance_id}/")
-        logger.info(f"   Direct ALB access: http://{Config.PUBLIC_ALB_DNS}/instance/{instance_id}/")
+        logger.info(f"✅ Public ALB Ingress configured for user {user_id} - path: /instance/{user_id}")
+        logger.info(f"   Access via CloudFront: https://{Config.CLOUDFRONT_DOMAIN}/instance/{user_id}/")
+        logger.info(f"   Direct ALB access: http://{Config.PUBLIC_ALB_DNS}/instance/{user_id}/")
 
     else:
         # Internal ALB + API Gateway 模式（原有逻辑）
@@ -359,7 +360,7 @@ def _build_ingress_config(instance_id):
                 f"{Config.INGRESS_CLASS}.ingress.kubernetes.io/target-type": Config.INGRESS_TARGET_TYPE,
 
                 # Health check
-                f"{Config.INGRESS_CLASS}.ingress.kubernetes.io/healthcheck-path": f"/instance/{instance_id}/",
+                f"{Config.INGRESS_CLASS}.ingress.kubernetes.io/healthcheck-path": f"/instance/{user_id}/",
                 f"{Config.INGRESS_CLASS}.ingress.kubernetes.io/healthcheck-protocol": "HTTP",
                 f"{Config.INGRESS_CLASS}.ingress.kubernetes.io/success-codes": "200,404",  # 404 ok if gateway requires auth
 
@@ -376,14 +377,14 @@ def _build_ingress_config(instance_id):
             "hosts": [{
                 "host": "",  # Empty host for path-based routing
                 "paths": [{
-                    "path": f"/instance/{instance_id}",
+                    "path": f"/instance/{user_id}",
                     "pathType": "Prefix"
                 }]
             }]
         }
 
-        logger.info(f"✅ Internal ALB Ingress configured for instance {instance_id} - path: /instance/{instance_id}")
-        logger.info(f"   Access via API Gateway: {Config.API_GATEWAY_ENDPOINT}/{Config.API_GATEWAY_STAGE}/instance/{instance_id}/")
+        logger.info(f"✅ Internal ALB Ingress configured for user {user_id} - path: /instance/{user_id}")
+        logger.info(f"   Access via API Gateway: {Config.API_GATEWAY_ENDPOINT}/{Config.API_GATEWAY_STAGE}/instance/{user_id}/")
 
     return config
 

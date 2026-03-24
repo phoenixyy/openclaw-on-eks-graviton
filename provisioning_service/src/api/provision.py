@@ -6,10 +6,9 @@ from app.k8s.namespace import create_namespace
 from app.k8s.netpol import create_network_policy
 from app.k8s.instance import create_openclaw_instance
 from app.aws.iam import create_pod_identity_role, create_pod_identity_association
-from app.utils.user_id import generate_user_id, generate_instance_id
+from app.utils.user_id import generate_user_id
 from app.utils.validator import validate_email
 from app.utils.session_auth import require_auth
-from app.database import get_next_instance_sequence, create_instance_record
 from app.config import Config
 import logging
 
@@ -92,49 +91,18 @@ def provision():
             if not siliconflow_api_key:
                 return jsonify({"error": "SiliconFlow API key is required"}), 400
 
-        # Get display_name (optional, default to model name)
-        display_name = data.get('display_name', '').strip()
-        if not display_name:
-            # Default display name based on provider and model
-            if selected_model:
-                display_name = f"{provider.title()} - {selected_model.split('/')[-1]}"
-            else:
-                display_name = f"{provider.title()} Instance"
-
         # Generate user_id
         user_id = generate_user_id(user_email)
+        namespace = f"openclaw-{user_id}"
+        instance_name = f"openclaw-{user_id}"
 
-        # Get next instance sequence number
-        sequence = get_next_instance_sequence(user_id)
-        if sequence > 99:
-            return jsonify({"error": "Maximum instances reached (100 per user)"}), 400
-
-        # Generate instance_id (format: {user_id}-{seq})
-        instance_id = generate_instance_id(user_id, sequence)
-        namespace = f"openclaw-{instance_id}"
-        instance_name = f"openclaw-{instance_id}"
-
-        logger.info(f"📥 Provisioning request: {user_email} (instance_id: {instance_id}, provider: {provider})")
-
-        # Create instance record in database
-        try:
-            create_instance_record(
-                instance_id=instance_id,
-                user_id=user_id,
-                user_email=user_email,
-                display_name=display_name,
-                provider=provider,
-                model=selected_model
-            )
-        except Exception as e:
-            logger.error(f"❌ Failed to create instance record: {str(e)}")
-            return jsonify({"error": f"Failed to create instance record: {str(e)}"}), 500
+        logger.info(f"📥 Provisioning request: {user_email} (user_id: {user_id}, provider: {provider})")
 
         # Initialize K8s client
         k8s_client = K8sClient()
 
         # Create Namespace
-        ns, ns_created = create_namespace(k8s_client, instance_id)
+        ns, ns_created = create_namespace(k8s_client, user_id)
 
         # Create ResourceQuota - DISABLED: operator's init-config container lacks resources spec
         # quota, quota_created = create_resource_quota(k8s_client, namespace)
@@ -151,7 +119,7 @@ def provision():
             logger.info(f"🔐 Using shared Bedrock IAM Role: {role_arn}")
 
             # Create Pod Identity Association (link SA to shared Role)
-            service_account = f"openclaw-{instance_id}"
+            service_account = f"openclaw-{user_id}"
             logger.info(f"🔗 Creating Pod Identity Association: {namespace}/{service_account} → {role_arn}")
 
             pod_identity_association_id = create_pod_identity_association(
@@ -176,7 +144,7 @@ def provision():
         # Create OpenClawInstance
         instance, instance_created = create_openclaw_instance(
             k8s_client,
-            instance_id,
+            user_id,
             namespace,
             user_email,
             cognito_sub=None,  # No longer using Cognito
@@ -193,9 +161,7 @@ def provision():
 
         response = {
             "status": status,
-            "instance_id": instance_id,
             "user_id": user_id,
-            "display_name": display_name,
             "namespace": namespace,
             "instance_name": instance_name,
             "gateway_endpoint": gateway_endpoint,

@@ -1,0 +1,433 @@
+/**
+ * Billing Panel Styles
+ * Industrial Cloud aesthetic with plasma-orange, electric-blue, cyber-cyan
+ */
+
+/* Billing Section Container */
+.billing-section {
+    margin-top: 2rem;
+    animation: billingFadeIn 0.6s ease-out;
+}
+
+@keyframes billingFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Billing Header */
+.billing-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+    position: relative;
+}
+
+.billing-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg, #00d4ff 0%, transparent 100%);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.billing-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #00d4ff;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+.billing-icon {
+    font-size: 1.8rem;
+    filter: drop-shadow(0 0 8px rgba(255, 107, 53, 0.6));
+}
+
+/* Stats Grid */
+.billing-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.billing-stat-card {
+    background: linear-gradient(135deg, rgba(0, 78, 137, 0.08) 0%, rgba(10, 14, 26, 0.6) 100%);
+    border: 1px solid rgba(0, 78, 137, 0.4);
+    border-radius: 12px;
+    padding: 1.75rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.billing-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.billing-stat-card::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(255, 107, 53, 0.3));
+    border-radius: 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+}
+
+.billing-stat-card:hover {
+    border-color: rgba(0, 212, 255, 0.8);
+    box-shadow:
+        0 0 20px rgba(0, 212, 255, 0.3),
+        inset 0 0 20px rgba(0, 212, 255, 0.05);
+    transform: translateY(-2px);
+}
+
+.billing-stat-card:hover::after {
+    opacity: 1;
+    filter: blur(10px);
+}
+
+.stat-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stat-label-icon {
+    font-size: 1rem;
+}
+
+.stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2.5rem;
+    font-weight: 600;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    position: relative;
+    display: inline-block;
+}
+
+.stat-value.tokens {
+    color: #ff6b35;
+    text-shadow: 0 0 30px rgba(255, 107, 53, 0.5);
+}
+
+.stat-value.calls {
+    color: #00d4ff;
+    text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+}
+
+.stat-sublabel {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
+}
+
+/* Quota Card */
+.quota-card {
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.08) 0%, rgba(10, 14, 26, 0.6) 100%) !important;
+}
+
+.quota-bar-container {
+    margin: 1rem 0;
+}
+
+.quota-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.quota-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff9d, #00d4ff);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+}
+
+.quota-text {
+    margin-top: 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+}
+
+/* Plan Info Banner */
+.plan-info-banner {
+    background: linear-gradient(135deg, rgba(0, 78, 137, 0.1) 0%, rgba(10, 14, 26, 0.8) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.plan-badge {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    letter-spacing: 1px;
+}
+
+.plan-badge.plan-free {
+    background: rgba(139, 147, 167, 0.2);
+    color: #8b93a7;
+    border: 1px solid rgba(139, 147, 167, 0.4);
+}
+
+.plan-badge.plan-pro {
+    background: rgba(0, 212, 255, 0.2);
+    color: #00d4ff;
+    border: 1px solid rgba(0, 212, 255, 0.4);
+}
+
+.plan-badge.plan-enterprise {
+    background: rgba(255, 107, 53, 0.2);
+    color: #ff6b35;
+    border: 1px solid rgba(255, 107, 53, 0.4);
+}
+
+.plan-features {
+    flex: 1;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-upgrade {
+    margin-left: auto;
+}
+
+/* Model Breakdown Table */
+.billing-models-section {
+    margin-bottom: 2rem;
+}
+
+.models-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.models-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #00d4ff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.models-table-container {
+    background: linear-gradient(135deg, rgba(0, 78, 137, 0.08) 0%, rgba(10, 14, 26, 0.6) 100%);
+    border: 1px solid rgba(0, 78, 137, 0.4);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.models-table-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.5), transparent);
+}
+
+.models-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.models-table thead {
+    background: rgba(0, 78, 137, 0.15);
+}
+
+.models-table th {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 1rem 1.5rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.models-table tbody tr {
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.models-table tbody tr::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: rgba(0, 212, 255, 0.1);
+}
+
+.models-table tbody tr:hover {
+    background: rgba(0, 212, 255, 0.08);
+}
+
+.models-table tbody tr:hover::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, #00d4ff, #ff6b35);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+}
+
+.models-table td {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.85);
+    padding: 1.25rem 1.5rem;
+}
+
+.model-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    color: #ffffff;
+}
+
+.provider-badge {
+    display: inline-block;
+    padding: 0.3rem 0.7rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.provider-badge.provider-bedrock {
+    background: rgba(0, 212, 255, 0.15);
+    color: #00d4ff;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.provider-badge.provider-siliconflow {
+    background: rgba(255, 107, 53, 0.15);
+    color: #ff6b35;
+    border: 1px solid rgba(255, 107, 53, 0.3);
+}
+
+.token-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    color: #ff6b35;
+    text-shadow: 0 0 10px rgba(255, 107, 53, 0.3);
+}
+
+.empty-state {
+    padding: 3rem 2rem;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: 'DM Sans', sans-serif;
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+}
+
+.empty-state-text {
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .billing-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+    }
+
+    .models-table th,
+    .models-table td {
+        padding: 0.875rem 1rem;
+        font-size: 0.85rem;
+    }
+
+    .plan-info-banner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .plan-features {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .btn-upgrade {
+        margin-left: 0;
+        width: 100%;
+    }
+}

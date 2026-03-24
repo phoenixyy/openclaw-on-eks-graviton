@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw - Sign In</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --plasma-orange: #ff6b35;
+            --electric-blue: #004e89;
+            --cyber-cyan: #00d4ff;
+            --deep-space: #0a0e1a;
+            --void-dark: #151925;
+            --slate-medium: #1e2433;
+            --text-primary: #ffffff;
+            --text-muted: #8b93a7;
+            --success: #00ff9d;
+            --warning: #ffd93d;
+            --danger: #ff5757;
+        }
+
+        @keyframes gridPulse {
+            0%, 100% { opacity: 0.1; }
+            50% { opacity: 0.3; }
+        }
+
+        @keyframes floatIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes glitchTitle {
+            0%, 100% {
+                text-shadow: 0 0 20px var(--plasma-orange),
+                            0 0 40px var(--plasma-orange);
+            }
+            50% {
+                text-shadow: 0 0 30px var(--cyber-cyan),
+                            2px 2px 0 var(--plasma-orange),
+                            -2px -2px 0 var(--electric-blue);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--deep-space);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Animated grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image:
+                linear-gradient(var(--electric-blue) 1px, transparent 1px),
+                linear-gradient(90deg, var(--electric-blue) 1px, transparent 1px);
+            background-size: 100px 100px;
+            opacity: 0.15;
+            animation: gridPulse 8s ease-in-out infinite;
+            transform: perspective(500px) rotateX(60deg);
+        }
+
+        /* Plasma gradient orbs */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -20%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--plasma-orange) 0%, transparent 70%);
+            opacity: 0.2;
+            filter: blur(80px);
+            animation: pulse 10s ease-in-out infinite;
+        }
+
+        .bg-orb-blue {
+            position: fixed;
+            bottom: -20%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--electric-blue) 0%, transparent 70%);
+            opacity: 0.25;
+            filter: blur(80px);
+            animation: pulse 12s ease-in-out infinite reverse;
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+            margin: 40px auto;
+            animation: floatIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .logo-icon {
+            font-size: 5rem;
+            display: block;
+            margin-bottom: 16px;
+            animation: pulse 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px var(--plasma-orange));
+        }
+
+        .logo h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--plasma-orange), var(--cyber-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            animation: glitchTitle 5s ease-in-out infinite;
+        }
+
+        .logo p {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        .login-card {
+            background: linear-gradient(135deg, var(--void-dark), var(--slate-medium));
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 20px;
+            padding: 48px 40px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--plasma-orange), transparent);
+        }
+
+        .login-card h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.75rem;
+            margin-bottom: 32px;
+            color: var(--text-primary);
+            text-align: center;
+            letter-spacing: -0.01em;
+        }
+
+        .form-tabs {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+            border-bottom: 1px solid rgba(139, 147, 167, 0.2);
+        }
+
+        .form-tab {
+            flex: 1;
+            padding: 12px 0;
+            font-family: 'Syne', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .form-tab.active {
+            color: var(--plasma-orange);
+            border-bottom-color: var(--plasma-orange);
+        }
+
+        .form-content {
+            display: none;
+        }
+
+        .form-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(10, 14, 26, 0.6);
+            border: 1px solid rgba(139, 147, 167, 0.2);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--plasma-orange);
+            background: rgba(10, 14, 26, 0.8);
+            box-shadow:
+                0 0 0 3px rgba(255, 107, 53, 0.1),
+                0 0 20px rgba(255, 107, 53, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-muted);
+            opacity: 0.5;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px 24px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--plasma-orange), #ff8c61);
+            color: white;
+            box-shadow:
+                0 10px 30px rgba(255, 107, 53, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow:
+                0 15px 40px rgba(255, 107, 53, 0.4),
+                0 0 30px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            display: none;
+            animation: floatIn 0.3s ease;
+        }
+
+        .message.error {
+            background: rgba(255, 87, 87, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .message.success {
+            background: rgba(0, 255, 157, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .login-footer {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .login-footer p {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            opacity: 0.6;
+        }
+
+        .tech-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            margin: 0 4px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 4px;
+            font-size: 0.65rem;
+            color: var(--cyber-cyan);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .logo h1 {
+                font-size: 2.5rem;
+            }
+
+            .logo-icon {
+                font-size: 4rem;
+            }
+
+            .login-card {
+                padding: 36px 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-orb-blue"></div>
+
+    <div class="login-container">
+        <div class="logo">
+            <span class="logo-icon">🦞</span>
+            <h1>OpenClaw</h1>
+            <p>Multi-Tenant Platform</p>
+        </div>
+
+        <div class="login-card">
+            <h2>Welcome</h2>
+
+            <!-- Tabs -->
+            <div class="form-tabs">
+                <button class="form-tab active" data-tab="login">Sign In</button>
+                <button class="form-tab" data-tab="register">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <div class="form-content active" id="login-form-content">
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-email">Email Address</label>
+                        <input
+                            type="email"
+                            id="login-email"
+                            required
+                            placeholder="your@email.com"
+                            autocomplete="email"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input
+                            type="password"
+                            id="login-password"
+                            required
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                        >
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="login-btn">
+                        Sign In
+                    </button>
+
+                    <div id="login-message" class="message"></div>
+                </form>
+            </div>
+
+            <!-- Register Form -->
+            <div class="form-content" id="register-form-content">
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="register-username">Username</label>
+                        <input
+                            type="text"
+                            id="register-username"
+                            required
+                            placeholder="johndoe"
+                            autocomplete="username"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="register-email">Email Address</label>
+                        <input
+                            type="email"
+                            id="register-email"
+                            required
+                            placeholder="your@email.com"
+                            autocomplete="email"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input
+                            type="password"
+                            id="register-password"
+                            required
+                            placeholder="At least 8 characters"
+                            autocomplete="new-password"
+                        >
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="register-btn">
+                        Create Account
+                    </button>
+
+                    <div id="register-message" class="message"></div>
+                </form>
+            </div>
+        </div>
+
+        <div class="login-footer">
+            <p>
+                <span class="tech-badge">AWS Graviton</span>
+                <span class="tech-badge">Kata Containers</span>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Get base path (handle /prod prefix)
+        const basePath = window.location.pathname.startsWith('/prod') ? '/prod' : '';
+
+        // Tab switching
+        document.querySelectorAll('.form-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+
+                // Update tab active state
+                document.querySelectorAll('.form-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                // Update form content visibility
+                document.querySelectorAll('.form-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`${tabName}-form-content`).classList.add('active');
+
+                // Clear messages
+                document.querySelectorAll('.message').forEach(msg => {
+                    msg.classList.remove('show');
+                    msg.textContent = '';
+                });
+            });
+        });
+
+        // Helper function to show message
+        function showMessage(elementId, text, type) {
+            const msgEl = document.getElementById(elementId);
+            msgEl.textContent = text;
+            msgEl.className = `message ${type} show`;
+        }
+
+        // Login form submission
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const submitBtn = document.getElementById('login-btn');
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Authenticating...';
+
+            try {
+                const response = await fetch(`${basePath}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',  // Include cookies (session)
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('login-message', 'Login successful! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = `${basePath}/dashboard`;
+                    }, 1000);
+                } else {
+                    showMessage('login-message', data.error || 'Login failed', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Sign In';
+                }
+            } catch (error) {
+                showMessage('login-message', 'Network error. Please try again.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign In';
+            }
+        });
+
+        // Register form submission
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const submitBtn = document.getElementById('register-btn');
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating Account...';
+
+            try {
+                const response = await fetch(`${basePath}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',  // Include cookies (session)
+                    body: JSON.stringify({ username, email, password }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('register-message', 'Account created! Please sign in.', 'success');
+                    // Clear form
+                    document.getElementById('register-form').reset();
+                    // Switch to login tab after 2 seconds
+                    setTimeout(() => {
+                        document.querySelector('[data-tab="login"]').click();
+                    }, 2000);
+                } else {
+                    showMessage('register-message', data.error || 'Registration failed', 'error');
+                }
+
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Account';
+            } catch (error) {
+                showMessage('register-message', 'Network error. Please try again.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Account';
+            }
+        });
+
+        // Check if already logged in
+        fetch(`${basePath}/me`, {
+            credentials: 'same-origin'  // Include cookies (session)
+        })
+            .then(response => {
+                if (response.ok) {
+                    // User is logged in, redirect to dashboard
+                    window.location.href = `${basePath}/dashboard`;
+                }
+            })
+            .catch(() => {
+                // Ignore error, user not logged in
+            });
+    </script>
+</body>
+</html>

@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw Dashboard - Test Mode</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --plasma-orange: #ff6b35;
+            --electric-blue: #004e89;
+            --cyber-cyan: #00d4ff;
+            --deep-space: #0a0e1a;
+            --void-dark: #151925;
+            --slate-medium: #1e2433;
+            --text-primary: #ffffff;
+            --text-muted: #8b93a7;
+            --success: #00ff9d;
+            --warning: #ffd93d;
+            --danger: #ff5757;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes glowPulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(255, 107, 53, 0.6);
+            }
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--deep-space);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        /* Grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(var(--electric-blue) 1px, transparent 1px),
+                linear-gradient(90deg, var(--electric-blue) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.05;
+            z-index: 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Header */
+        header {
+            position: relative;
+            background: linear-gradient(135deg, var(--void-dark), var(--slate-medium));
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.5s ease;
+            z-index: 100;
+        }
+
+        .header-left h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--plasma-orange), var(--cyber-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--plasma-orange), #ff8c61);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(0, 78, 137, 0.3);
+            color: var(--electric-blue);
+            border: 1px solid var(--electric-blue);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(0, 78, 137, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00d77a, var(--success));
+            color: var(--deep-space);
+            font-weight: 700;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 157, 0.4);
+        }
+
+        .btn-danger {
+            background: rgba(255, 87, 87, 0.15);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: rgba(255, 87, 87, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .btn-lg {
+            padding: 16px 32px;
+            font-size: 1.1rem;
+        }
+
+        .btn-copy {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--cyber-cyan);
+            border: 1px solid rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-copy:hover:not(:disabled) {
+            background: rgba(0, 212, 255, 0.25);
+        }
+
+        /* Main Content */
+        main {
+            position: relative;
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            z-index: 1;
+            animation: fadeIn 0.6s ease 0.2s both;
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 24px;
+            border: 4px solid rgba(255, 107, 53, 0.2);
+            border-top: 4px solid var(--plasma-orange);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading p {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
+        }
+
+        /* Messages */
+        .error-banner,
+        .success-banner {
+            padding: 16px 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 0.95rem;
+            animation: slideDown 0.4s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .error-banner {
+            background: rgba(255, 87, 87, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .success-banner {
+            background: rgba(0, 255, 157, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 100px 40px;
+            background: linear-gradient(135deg, var(--void-dark), var(--slate-medium));
+            border: 2px dashed rgba(139, 147, 167, 0.3);
+            border-radius: 24px;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .empty-icon {
+            font-size: 6rem;
+            margin-bottom: 24px;
+            opacity: 0.4;
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        .empty-state h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 36px;
+        }
+
+        /* Instance Display */
+        .instance-card-large {
+            background: linear-gradient(135deg, var(--void-dark), var(--slate-medium));
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.6s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .instance-card-large::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--plasma-orange), transparent);
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+
+        .instance-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid rgba(139, 147, 167, 0.2);
+        }
+
+        .instance-header h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 12px;
+        }
+
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: inline-block;
+        }
+
+        .status-running {
+            background: rgba(0, 255, 157, 0.15);
+            color: var(--success);
+            border: 1px solid var(--success);
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
+        }
+
+        .status-pending {
+            background: rgba(255, 217, 61, 0.15);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-failed {
+            background: rgba(255, 87, 87, 0.15);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        /* Instance Details */
+        .instance-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .detail-group {
+            background: rgba(10, 14, 26, 0.6);
+            border: 1px solid rgba(139, 147, 167, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .detail-group:hover {
+            border-color: rgba(0, 212, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .detail-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .detail-group label {
+            display: block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .detail-value {
+            color: var(--text-primary);
+            font-size: 1.15rem;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .gateway-endpoint {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .gateway-endpoint code {
+            flex: 1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 14px 18px;
+            border-radius: 10px;
+            color: var(--cyber-cyan);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            word-break: break-all;
+        }
+
+        /* Instance Actions */
+        .instance-actions {
+            display: flex;
+            gap: 16px;
+            padding-top: 32px;
+            border-top: 1px solid rgba(139, 147, 167, 0.2);
+        }
+
+        .instance-actions .btn {
+            flex: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 16px;
+                padding: 20px;
+            }
+
+            main {
+                padding: 24px;
+            }
+
+            .actions-bar {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .instance-details {
+                grid-template-columns: 1fr;
+            }
+
+            .instance-actions {
+                flex-direction: column;
+            }
+
+            .instance-card-large {
+                padding: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <h1>🦞 OpenClaw Dashboard</h1>
+        </div>
+        <div class="header-right">
+            <span class="user-info">testuser@example.com</span>
+            <button class="btn btn-secondary" onclick="alert('Test mode - no logout')">Logout</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="actions-bar">
+            <button id="create-btn" class="btn btn-primary" onclick="showLoading()">
+                <span>➕</span> Create OpenClaw Instance
+            </button>
+            <button class="btn btn-secondary" onclick="location.reload()">
+                <span>🔄</span> Refresh
+            </button>
+        </div>
+
+        <div id="error-message" class="error-banner hidden">
+            ❌ This is a test error message
+        </div>
+
+        <div id="instances-container">
+            <!-- Empty State (default) -->
+            <div id="empty-state" class="empty-state">
+                <div class="empty-icon">📦</div>
+                <h2>No OpenClaw Instance Yet</h2>
+                <p>Get started by creating your first OpenClaw instance</p>
+                <button class="btn btn-primary btn-lg" onclick="showLoading()">
+                    <span>➕</span> Create Instance
+                </button>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Creating your instance...</p>
+            </div>
+
+            <!-- Instance Display -->
+            <div id="instance-display" class="hidden">
+                <div class="instance-card-large">
+                    <div class="instance-header">
+                        <div>
+                            <h2>My OpenClaw Instance</h2>
+                            <span class="status-badge status-running">Running</span>
+                        </div>
+                    </div>
+
+                    <div class="instance-details">
+                        <div class="detail-group">
+                            <label>Instance ID</label>
+                            <div class="detail-value">a744863d</div>
+                        </div>
+
+                        <div class="detail-group">
+                            <label>Namespace</label>
+                            <div class="detail-value">openclaw</div>
+                        </div>
+
+                        <div class="detail-group">
+                            <label>Created At</label>
+                            <div class="detail-value">2026-03-02 14:30:00</div>
+                        </div>
+
+                        <div class="detail-group full-width">
+                            <label>Gateway Endpoint</label>
+                            <div class="gateway-endpoint">
+                                <code>openclaw-a744863d.openclaw.svc.cluster.local:18789</code>
+                                <button class="btn btn-copy" onclick="alert('Copied!')">
+                                    📋 Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="instance-actions">
+                        <button class="btn btn-success">
+                            <span>🔗</span> Connect to Gateway
+                        </button>
+                        <button class="btn btn-danger" onclick="showEmpty()">
+                            <span>🗑️</span> Delete Instance
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function showLoading() {
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('instance-display').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('create-btn').disabled = true;
+            document.getElementById('create-btn').innerHTML = '<span>⏳</span> Creating...';
+
+            // Simulate loading
+            setTimeout(showInstance, 3000);
+        }
+
+        function showInstance() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('instance-display').classList.remove('hidden');
+            document.getElementById('create-btn').disabled = true;
+        }
+
+        function showEmpty() {
+            if (confirm('Delete instance? (This is test mode)')) {
+                document.getElementById('instance-display').classList.add('hidden');
+                document.getElementById('empty-state').classList.remove('hidden');
+                document.getElementById('create-btn').disabled = false;
+                document.getElementById('create-btn').innerHTML = '<span>➕</span> Create OpenClaw Instance';
+            }
+        }
+    </script>
+</body>
+</html>

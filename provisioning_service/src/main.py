@@ -88,6 +88,15 @@ def create_app():
     app.register_blueprint(billing_bp)  # Billing API
     app.register_blueprint(admin_bp)  # Admin API
 
+    # Initialize flask-sock AFTER blueprint registration (registers WebSocket routes on the app)
+    try:
+        from app.api.proxy import sock as proxy_sock
+        if proxy_sock is not None:
+            proxy_sock.init_app(app)
+            logger.info("✅ flask-sock initialized (WebSocket support enabled)")
+    except Exception as e:
+        logger.warning(f"⚠️ flask-sock init skipped: {e}")
+
     # Frontend routes
     @app.route('/')
     def index():

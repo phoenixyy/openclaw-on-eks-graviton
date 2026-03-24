@@ -157,8 +157,9 @@ class WebSocketManager {
 
 // Dashboard page logic
 const Dashboard = {
-    instances: [],
+    currentInstances: [],
     refreshTimer: null,
+    isDeleting: false,
     wsManager: new WebSocketManager(),
 
     // Initialize dashboard
@@ -285,11 +286,11 @@ const Dashboard = {
 
     // Open the create-instance modal
     async openCreateModal() {
-        // Check if user has reached max instances
-        if (this.instances.length >= CONFIG.MAX_INSTANCES) {
-            this.showError(`Maximum instances reached (${CONFIG.MAX_INSTANCES} per user)`);
-            return;
-        }
+        // Allow creating multiple instances (remove the single-instance restriction)
+        // if (this.currentInstances.length > 0) {
+        //     this.showError('You already have an instance. Please delete it first.');
+        //     return;
+        // }
         // Ensure models are loaded before opening
         if (!this.allModels.bedrock && !this.allModels.siliconflow) {
             await this.loadModels();
@@ -420,11 +421,11 @@ const Dashboard = {
         this.hideError();
 
         try {
-            const data = await API.getInstances();
-            this.instances = data.instances || [];
+            const instances = await API.getInstances();
+            this.currentInstances = instances;
 
-            if (this.instances.length > 0) {
-                this.showInstancesList(this.instances);
+            if (instances && instances.length > 0) {
+                this.showInstances(instances);
             } else {
                 this.showEmptyState();
             }
@@ -447,112 +448,116 @@ const Dashboard = {
     // Show empty state (no instances)
     showEmptyState() {
         document.getElementById('empty-state').classList.remove('hidden');
-        document.getElementById('instances-list').classList.add('hidden');
-
-        // Enable create button
+        document.getElementById('instances-grid').classList.add('hidden');
         document.getElementById('create-instance-btn').disabled = false;
     },
 
-    // Show instances list
-    showInstancesList(instances) {
+    // Show instances grid
+    showInstances(instances) {
         document.getElementById('empty-state').classList.add('hidden');
-        document.getElementById('instances-list').classList.remove('hidden');
+        document.getElementById('instances-grid').classList.remove('hidden');
 
-        const container = document.getElementById('instances-container');
-        container.innerHTML = '';
+        // Clear existing cards
+        const grid = document.getElementById('instances-grid');
+        grid.innerHTML = '';
 
+        // Render each instance card
         instances.forEach(instance => {
-            const card = this.createInstanceCard(instance);
-            container.appendChild(card);
+            const card = this.renderInstanceCard(instance);
+            grid.appendChild(card);
         });
 
-        // Enable create button if under limit
-        document.getElementById('create-instance-btn').disabled = instances.length >= CONFIG.MAX_INSTANCES;
+        // Enable create button (multi-instance support)
+        document.getElementById('create-instance-btn').disabled = false;
     },
 
-    // Create instance card HTML
-    createInstanceCard(instance) {
+    // Render a single instance card
+    renderInstanceCard(instance) {
         const card = document.createElement('div');
         card.className = 'instance-card';
         card.dataset.instanceId = instance.instance_id;
 
-        const status = instance.status || 'Pending';
-        const statusMessage = instance.status_message || status;
-        const readyForConnect = instance.ready_for_connect === true;
+        // Determine status class and badge text
+        const statusClass = `status-${(instance.status || 'pending').toLowerCase()}`;
+        const statusText = instance.status || 'Pending';
 
+        // Format created date
+        const createdDate = instance.created_at ? new Date(instance.created_at).toLocaleDateString() : 'Unknown';
+
+        // Provider display
+        const providerIcon = instance.provider === 'siliconflow' ? '🤖' : '☁️';
+        const providerName = instance.provider === 'siliconflow' ? 'SiliconFlow' : 'Bedrock';
+
+        // Build card HTML
         card.innerHTML = `
             <div class="instance-card-header">
-                <div>
-                    <h3 class="instance-card-title">${this.escapeHtml(instance.display_name || instance.instance_id)}</h3>
-                    <div class="instance-card-meta">
-                        <span class="instance-id">${this.escapeHtml(instance.instance_id)}</span>
-                        <span class="instance-provider">${this.escapeHtml(instance.llm_provider || 'bedrock')}</span>
-                    </div>
-                </div>
-                <span class="status-badge status-${status.toLowerCase()}">${this.escapeHtml(statusMessage)}</span>
+                <h3 class="instance-card-title">${this.escapeHtml(instance.display_name || instance.instance_id)}</h3>
+                <span class="status-badge ${statusClass}">${statusText}</span>
             </div>
             <div class="instance-card-body">
-                <div class="instance-detail">
-                    <label>Created</label>
-                    <span>${new Date(instance.created_at).toLocaleString()}</span>
+                <div class="instance-info-row">
+                    <span class="instance-info-label">Instance ID</span>
+                    <span class="instance-info-value">${this.escapeHtml(instance.instance_id)}</span>
                 </div>
-                ${instance.cloudfront_http_url ? `
-                <div class="instance-detail">
-                    <label>Gateway URL</label>
-                    <div class="gateway-url">
-                        <code>${this.escapeHtml(instance.cloudfront_http_url)}</code>
-                        <button class="btn-copy" onclick="Dashboard.copyToClipboard('${this.escapeHtml(instance.cloudfront_http_url)}')">📋</button>
-                    </div>
+                <div class="instance-info-row">
+                    <span class="instance-info-label">Provider</span>
+                    <span class="instance-info-value">${providerIcon} ${providerName}</span>
                 </div>
-                ` : '<div class="instance-detail"><label>Gateway URL</label><span>Generating...</span></div>'}
+                <div class="instance-info-row">
+                    <span class="instance-info-label">Model</span>
+                    <span class="instance-info-value">${this.escapeHtml(instance.model || 'Unknown')}</span>
+                </div>
+                <div class="instance-info-row">
+                    <span class="instance-info-label">Created</span>
+                    <span class="instance-info-value">${createdDate}</span>
+                </div>
             </div>
             <div class="instance-card-actions">
-                ${readyForConnect ? `
-                    <button class="btn btn-success" onclick="Dashboard.connectInstance('${instance.instance_id}', '${this.escapeHtml(instance.cloudfront_http_url || '')}')">
-                        🔗 Connect
-                    </button>
-                ` : `
-                    <button class="btn btn-success" disabled>
-                        ⏳ ${this.escapeHtml(statusMessage)}
-                    </button>
-                `}
-                <button class="btn btn-danger" onclick="Dashboard.deleteInstanceConfirm('${instance.instance_id}')">
-                    🗑️ Delete
+                <button class="btn btn-success ${instance.ready_for_connect ? '' : 'disabled'}"
+                        data-action="connect"
+                        ${!instance.ready_for_connect ? 'disabled' : ''}>
+                    <span>🔗</span> Connect
+                </button>
+                <button class="btn btn-danger" data-action="delete">
+                    <span>🗑️</span> Delete
                 </button>
             </div>
         `;
 
+        // Add event listeners to buttons
+        const connectBtn = card.querySelector('[data-action="connect"]');
+        const deleteBtn = card.querySelector('[data-action="delete"]');
+
+        connectBtn.addEventListener('click', () => {
+            this.handleConnectInstance(instance);
+        });
+
+        deleteBtn.addEventListener('click', () => {
+            this.handleDeleteInstance(instance);
+        });
+
         return card;
     },
 
-    // Connect to instance
-    connectInstance(instanceId, gatewayUrl) {
-        if (!gatewayUrl) {
-            this.showError('Gateway URL not available yet');
-            return;
-        }
-        window.open(gatewayUrl, '_blank');
-        this.showSuccess('Opening gateway in new tab...');
+    // Legacy single-instance display (kept for backward compatibility)
+    showInstance(instance) {
+        // Wrap single instance in array and call showInstances
+        this.showInstances([instance]);
     },
 
-    // Copy to clipboard helper
-    copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            this.showSuccess('Copied to clipboard!');
-        }).catch(err => {
-            console.error('Failed to copy:', err);
-            this.showError('Failed to copy to clipboard');
-        });
-    },
 
     // Handle create instance (called from modal Create button)
     async handleCreateInstance() {
+        // Multi-instance support - no longer check for existing instance
+        // if (this.currentInstances.length > 0) {
+        //     this.showError('You already have an instance. Please delete it first.');
+        //     this.closeCreateModal();
+        //     return;
+        // }
+
         const selectedProvider = this.modalSelectedProvider;
         const selectedModel = this.modalSelectedModel;
         const selectedRuntime = this.modalSelectedRuntime;
-
-        // Get display name (optional)
-        const displayName = document.getElementById('modal-display-name')?.value?.trim() || '';
 
         // Validate SiliconFlow API key
         let siliconflowApiKey = null;
@@ -575,7 +580,7 @@ const Dashboard = {
         this.hideError();
 
         try {
-            const result = await API.createInstance(selectedRuntime, selectedProvider, siliconflowApiKey, selectedModel, displayName);
+            const result = await API.createInstance(selectedRuntime, selectedProvider, siliconflowApiKey, selectedModel);
             console.log('Instance created:', result);
 
             // Close modal and show success
@@ -592,54 +597,242 @@ const Dashboard = {
         }
     },
 
-    // Confirm and delete instance
-    deleteInstanceConfirm(instanceId) {
+    // Handle delete instance
+    async handleDeleteInstance(instance) {
+        if (!instance) {
+            return;
+        }
+
         const confirmation = prompt(
-            `⚠️ WARNING: This will permanently delete instance ${instanceId}.\n\n` +
+            `⚠️ WARNING: This will permanently delete instance "${instance.display_name || instance.instance_id}".\n\n` +
             `Type "DELETE" to confirm:`
         );
 
-        if (confirmation === 'DELETE') {
-            this.deleteInstance(instanceId);
+        if (confirmation !== 'DELETE') {
+            return;
         }
-    },
 
-    // Handle delete instance
-    async deleteInstance(instanceId) {
         this.hideError();
 
-        // Find and update the card UI
-        const card = document.querySelector(`[data-instance-id="${instanceId}"]`);
+        // Find the card and update its UI
+        const card = document.querySelector(`[data-instance-id="${instance.instance_id}"]`);
         if (card) {
+            const deleteBtn = card.querySelector('[data-action="delete"]');
+            const connectBtn = card.querySelector('[data-action="connect"]');
+            if (deleteBtn) deleteBtn.disabled = true;
+            if (connectBtn) connectBtn.disabled = true;
+
             const statusBadge = card.querySelector('.status-badge');
             if (statusBadge) {
                 statusBadge.textContent = 'Deleting...';
-                statusBadge.className = 'status-badge status-warning';
+                statusBadge.className = 'status-badge status-pending';
             }
-            const buttons = card.querySelectorAll('button');
-            buttons.forEach(btn => btn.disabled = true);
         }
 
         try {
-            await API.deleteInstance(instanceId);
-            console.log('Instance deleted:', instanceId);
+            await API.deleteInstance(instance.instance_id);
+            console.log('Instance deleted:', instance.instance_id);
 
             this.showSuccess('Instance deleted successfully!');
 
-            // Refresh instances list
+            // Refresh instances list after a delay
             setTimeout(() => this.loadInstances(), 2000);
         } catch (error) {
             console.error('Failed to delete instance:', error);
             this.showError(`Failed to delete instance: ${error.message}`);
 
-            // Re-enable buttons on error
+            // Restore card state
             if (card) {
-                const buttons = card.querySelectorAll('button');
-                buttons.forEach(btn => btn.disabled = false);
+                const deleteBtn = card.querySelector('[data-action="delete"]');
+                const connectBtn = card.querySelector('[data-action="connect"]');
+                if (deleteBtn) deleteBtn.disabled = false;
+                if (connectBtn && instance.ready_for_connect) connectBtn.disabled = false;
             }
         }
     },
 
+    // Handle connect to instance - open gateway in new tab
+    async handleConnectInstance(instance) {
+        if (!instance) {
+            this.showError('No instance selected');
+            return;
+        }
+
+        // Use CloudFront HTTP URL (for browser access)
+        const gatewayUrl = instance.cloudfront_http_url;
+
+        if (!gatewayUrl) {
+            this.showError('Gateway URL not available yet. Please wait for instance to be ready.');
+            return;
+        }
+
+        try {
+            // Open gateway in new tab
+            window.open(gatewayUrl, '_blank');
+            this.showSuccess(`Opening ${instance.display_name || instance.instance_id} in new tab...`);
+        } catch (error) {
+            console.error('Failed to open gateway:', error);
+            this.showError(`Failed to open gateway: ${error.message}`);
+        }
+    },
+
+    // Handle disconnect from instance
+    handleDisconnectInstance() {
+        this.wsManager.disconnect();
+
+        // Hide WebSocket controls panel
+        const wsControls = document.getElementById('ws-controls');
+        if (wsControls) {
+            wsControls.classList.add('hidden');
+        }
+
+        // Hide pairing notification if visible
+        const pairingNotif = document.getElementById('pairing-notification');
+        if (pairingNotif) {
+            pairingNotif.classList.add('hidden');
+        }
+
+        this.showSuccess('Disconnected from gateway');
+    },
+
+    // Handle approve device (triggered by WebSocket pairing notification)
+    async handleApproveDevice() {
+        const notification = document.getElementById('pairing-notification');
+        const requestId = notification?.dataset.requestId;
+
+        if (!requestId || !this.currentInstance) {
+            this.showError('No pending device pairing request');
+            return;
+        }
+
+        try {
+            this.hideError();
+            const result = await API.approveDevice(
+                this.currentInstance.user_id,
+                requestId
+            );
+
+            if (result.success) {
+                this.showSuccess('✅ Device approved successfully!');
+                notification.classList.add('hidden');
+
+                // Reconnect WebSocket after approval
+                setTimeout(() => {
+                    if (this.currentInstance && this.currentInstance.cloudfront_url) {
+                        console.log('🔄 Reconnecting WebSocket after device approval...');
+                        this.wsManager.connect(this.currentInstance.cloudfront_url);
+                    }
+                }, 1000);
+            } else {
+                this.showError('Failed to approve device');
+            }
+        } catch (error) {
+            console.error('Failed to approve device:', error);
+            this.showError(`Failed to approve device: ${error.message}`);
+        }
+    },
+
+    // Handle approve device manually (auto-find pending request)
+    async handleApproveDeviceManual() {
+        if (!this.currentInstance) {
+            this.showError('No instance selected');
+            return;
+        }
+
+        const approveBtn = document.getElementById('approve-device-btn');
+        const statusContainer = document.getElementById('device-approval-status');
+        const statusMessage = document.getElementById('approval-status-message');
+
+        try {
+            this.hideError();
+
+            // Set button to "Approving..." state
+            approveBtn.disabled = true;
+            approveBtn.innerHTML = '<span>⏳</span> Approving...';
+
+            // Hide previous status
+            if (statusContainer) {
+                statusContainer.style.display = 'none';
+            }
+
+            // Call API with request_id=null, backend will auto-find pending request
+            const result = await API.approveDevice(
+                this.currentInstance.user_id,
+                null  // request_id null triggers auto-find in backend
+            );
+
+            if (result.success) {
+                // Success: Show approved button
+                approveBtn.innerHTML = '<span>✓</span> Approved';
+                approveBtn.classList.remove('btn-primary');
+                approveBtn.classList.add('btn-success');
+                // Keep button disabled - approved state
+
+                // Show success message below gateway endpoint
+                if (statusContainer && statusMessage) {
+                    statusMessage.className = 'approval-status-message success';
+                    statusMessage.innerHTML = '✅ Device approved successfully! You can now pair your devices.';
+                    statusContainer.style.display = 'block';
+                }
+
+                // Reconnect WebSocket after approval
+                if (this.wsManager.isConnected && this.currentInstance.cloudfront_url) {
+                    setTimeout(() => {
+                        console.log('🔄 Reconnecting WebSocket after device approval...');
+                        this.wsManager.connect(this.currentInstance.cloudfront_url);
+                    }, 1000);
+                }
+            } else {
+                // Backend returned success=false, meaning no pending requests
+                // Restore button to original state
+                approveBtn.disabled = false;
+                approveBtn.innerHTML = '<span>🔐</span> Approve Device';
+
+                // Show warning message
+                if (statusContainer && statusMessage) {
+                    statusMessage.className = 'approval-status-message warning';
+                    statusMessage.innerHTML = '⚠️ ' + (result.message || 'No pending device requests found');
+                    statusContainer.style.display = 'block';
+                }
+            }
+        } catch (error) {
+            console.error('Failed to approve device:', error);
+
+            // Restore button to original state
+            approveBtn.disabled = false;
+            approveBtn.innerHTML = '<span>❌</span> Approve Device';
+
+            // Show error message
+            if (statusContainer && statusMessage) {
+                statusMessage.className = 'approval-status-message error';
+                statusMessage.innerHTML = '❌ Failed to approve device: ' + error.message + ' (Click to retry)';
+                statusContainer.style.display = 'block';
+            }
+
+            this.showError(`Failed to approve device: ${error.message}`);
+        }
+    },
+
+    // Copy gateway endpoint to clipboard
+    copyGatewayEndpoint() {
+        const gatewayEl = document.getElementById('instance-gateway');
+        const displayedText = gatewayEl ? gatewayEl.textContent : '';
+        if (!displayedText || displayedText === 'Not available yet') {
+            return;
+        }
+
+        navigator.clipboard.writeText(displayedText).then(() => {
+            const copyBtn = document.getElementById('copy-gateway-btn');
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = '✓ Copied!';
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            this.showError('Failed to copy to clipboard');
+        });
+    },
 
     // Show/hide loading
     showLoading(show) {
@@ -680,8 +873,8 @@ const Dashboard = {
     startAutoRefresh() {
         this.stopAutoRefresh();
         this.refreshTimer = setInterval(() => {
-            // Auto-refresh instances list
-            if (this.instances.length > 0) {
+            // Only auto-refresh if instances exist
+            if (this.currentInstances && this.currentInstances.length > 0) {
                 this.loadInstances();
             }
         }, CONFIG.REFRESH_INTERVAL);

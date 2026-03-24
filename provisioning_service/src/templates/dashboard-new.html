@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Amazon Cognito Identity SDK -->
+    <!-- Billing Panel Styles -->
+    <link rel="stylesheet" href="/static/css/billing.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --plasma-orange: #ff6b35;
+            --electric-blue: #004e89;
+            --cyber-cyan: #00d4ff;
+            --deep-space: #0a0e1a;
+            --void-dark: #151925;
+            --slate-medium: #1e2433;
+            --text-primary: #ffffff;
+            --text-muted: #8b93a7;
+            --success: #00ff9d;
+            --warning: #ffd93d;
+            --danger: #ff5757;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes glowPulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(255, 107, 53, 0.6);
+            }
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--deep-space);
+            color: var(--text-primary);
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        /* Grid background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(var(--electric-blue) 1px, transparent 1px),
+                linear-gradient(90deg, var(--electric-blue) 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.05;
+            z-index: 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Header */
+        header {
+            position: relative;
+            background: linear-gradient(135deg, var(--void-dark), var(--slate-medium));
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.5s ease;
+            z-index: 100;
+        }
+
+        .header-left h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, var(--plasma-orange), var(--cyber-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--plasma-orange), #ff8c61);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(0, 78, 137, 0.3);
+            color: var(--electric-blue);
+            border: 1px solid var(--electric-blue);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(0, 78, 137, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00d77a, var(--success));
+            color: var(--deep-space);
+            font-weight: 700;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 157, 0.4);
+        }
+
+        .btn-danger {
+            background: rgba(255, 87, 87, 0.15);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: rgba(255, 87, 87, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .btn-lg {
+            padding: 16px 32px;
+            font-size: 1.1rem;
+        }
+
+        .btn-copy {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--cyber-cyan);
+            border: 1px solid rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-copy:hover:not(:disabled) {
+            background: rgba(0, 212, 255, 0.25);
+        }
+
+        /* Main Content */
+        main {
+            position: relative;
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            z-index: 1;
+            animation: fadeIn 0.6s ease 0.2s both;
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 24px;
+            border: 4px solid rgba(255, 107, 53, 0.2);
+            border-top: 4px solid var(--plasma-orange);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading p {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
+        }
+
+        /* Messages */
+        .error-banner,
+        .success-banner {
+            padding: 16px 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 0.95rem;
+            animation: slideDown 0.4s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .error-banner {
+            background: rgba(255, 87, 87, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .success-banner {
+            background: rgba(0, 255, 157, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 100px 40px;
+            background: linear-gradient(135deg, var(--void-dark), var(--slate-medium));
+            border: 2px dashed rgba(139, 147, 167, 0.3);
+            border-radius: 24px;
+            animation: fadeIn 0.6s ease;
+        }
+
+        /* Instance Grid */
+        .instances-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 24px;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .instance-card {
+            background: linear-gradient(135deg, var(--void-dark), var(--slate-medium));
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .instance-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 50px rgba(0, 0, 0, 0.4);
+            border-color: rgba(0, 212, 255, 0.4);
+        }
+
+        .instance-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--plasma-orange), transparent);
+        }
+
+        .instance-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(139, 147, 167, 0.2);
+        }
+
+        .instance-card-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+        }
+
+        .instance-card-body {
+            margin-bottom: 20px;
+        }
+
+        .instance-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(139, 147, 167, 0.1);
+        }
+
+        .instance-info-row:last-child {
+            border-bottom: none;
+        }
+
+        .instance-info-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+        }
+
+        .instance-info-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .instance-card-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .instance-card-actions .btn {
+            flex: 1;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+        }
+
+        .empty-icon {
+            font-size: 6rem;
+            margin-bottom: 24px;
+            opacity: 0.4;
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        .empty-state h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 36px;
+        }
+
+        /* Instance Display */
+        .instance-card-large {
+            background: linear-gradient(135deg, var(--void-dark), var(--slate-medium));
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.6s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .instance-card-large::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--plasma-orange), transparent);
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+
+        .instance-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid rgba(139, 147, 167, 0.2);
+        }
+
+        .instance-header h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 12px;
+        }
+
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            display: inline-block;
+        }
+
+        .status-running {
+            background: rgba(0, 255, 157, 0.15);
+            color: var(--success);
+            border: 1px solid var(--success);
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
+        }
+
+        .status-pending {
+            background: rgba(255, 217, 61, 0.15);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-failed {
+            background: rgba(255, 87, 87, 0.15);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        /* Instance Details */
+        .instance-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .detail-group {
+            background: rgba(10, 14, 26, 0.6);
+            border: 1px solid rgba(139, 147, 167, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .detail-group:hover {
+            border-color: rgba(0, 212, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .detail-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .detail-group label {
+            display: block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .detail-value {
+            color: var(--text-primary);
+            font-size: 1.15rem;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .gateway-endpoint {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .gateway-endpoint code {
+            flex: 1;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 14px 18px;
+            border-radius: 10px;
+            color: var(--cyber-cyan);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            word-break: break-all;
+        }
+
+        /* Instance Actions */
+        .instance-actions {
+            display: flex;
+            gap: 16px;
+            padding-top: 32px;
+            border-top: 1px solid rgba(139, 147, 167, 0.2);
+        }
+
+        .instance-actions .btn {
+            flex: 1;
+        }
+
+
+        /* Runtime Badge (in instance details) */
+        .runtime-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .runtime-badge.runtime-runc {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--cyber-cyan);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .runtime-badge.runtime-kata {
+            background: rgba(255, 107, 53, 0.15);
+            color: var(--plasma-orange);
+            border: 1px solid rgba(255, 107, 53, 0.3);
+        }
+
+        /* ── Create Instance Modal ── */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+            pointer-events: none;
+        }
+
+        .modal-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            width: 520px;
+            max-width: calc(100vw - 40px);
+            max-height: calc(100vh - 80px);
+            overflow-y: auto;
+            background: linear-gradient(160deg, #181d2e 0%, #151925 100%);
+            border: 1px solid rgba(139, 147, 167, 0.18);
+            border-radius: 20px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.04) inset;
+            z-index: 1001;
+            opacity: 0;
+            transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
+        }
+
+        .modal-backdrop.open .modal-card {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+        }
+
+        .modal-header {
+            padding: 28px 32px 0;
+        }
+
+        .modal-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+        }
+
+        .modal-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .modal-body {
+            padding: 24px 32px 8px;
+        }
+
+        .modal-section {
+            margin-bottom: 24px;
+        }
+
+        .modal-section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        /* Toggle button group (used for provider + runtime in modal) */
+        .modal-toggle-group {
+            display: flex;
+            background: rgba(10, 14, 26, 0.8);
+            border: 1px solid rgba(139, 147, 167, 0.2);
+            border-radius: 10px;
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .modal-toggle-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 9px 16px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.22s ease;
+            white-space: nowrap;
+        }
+
+        .modal-toggle-btn:hover:not(.active) {
+            color: var(--text-primary);
+            background: rgba(139, 147, 167, 0.08);
+        }
+
+        .modal-toggle-btn.active {
+            background: rgba(0, 212, 255, 0.13);
+            color: var(--cyber-cyan);
+            border-color: rgba(0, 212, 255, 0.35);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.1);
+        }
+
+        .modal-toggle-btn.active.accent-orange {
+            background: rgba(255, 107, 53, 0.13);
+            color: var(--plasma-orange);
+            border-color: rgba(255, 107, 53, 0.35);
+            box-shadow: 0 0 12px rgba(255, 107, 53, 0.1);
+        }
+
+        /* API Key inline input in modal */
+        .modal-apikey-row {
+            margin-top: 10px;
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease;
+        }
+
+        .modal-apikey-row.visible {
+            max-height: 60px;
+            opacity: 1;
+        }
+
+        .modal-apikey-input {
+            width: 100%;
+            background: rgba(10, 14, 26, 0.8);
+            border: 1px solid rgba(139, 147, 167, 0.25);
+            border-radius: 10px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .modal-apikey-input::placeholder {
+            color: rgba(139, 147, 167, 0.5);
+        }
+
+        .modal-apikey-input:focus {
+            border-color: rgba(255, 107, 53, 0.5);
+            box-shadow: 0 0 12px rgba(255, 107, 53, 0.12);
+        }
+
+        /* Model card list */
+        .model-card-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 240px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .model-card-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .model-card-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .model-card-list::-webkit-scrollbar-thumb {
+            background: rgba(139, 147, 167, 0.3);
+            border-radius: 4px;
+        }
+
+        .model-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: rgba(10, 14, 26, 0.5);
+            border: 1px solid rgba(139, 147, 167, 0.12);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .model-card:hover {
+            background: rgba(10, 14, 26, 0.8);
+            border-color: rgba(139, 147, 167, 0.25);
+        }
+
+        .model-card.selected {
+            background: rgba(0, 212, 255, 0.06);
+            border-color: rgba(0, 212, 255, 0.35);
+            box-shadow: 0 0 16px rgba(0, 212, 255, 0.08);
+        }
+
+        .model-card-radio {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid rgba(139, 147, 167, 0.35);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .model-card.selected .model-card-radio {
+            border-color: var(--cyber-cyan);
+        }
+
+        .model-card.selected .model-card-radio::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--cyber-cyan);
+        }
+
+        .model-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .model-card-name {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .model-card-provider {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .model-card-default {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(0, 255, 157, 0.12);
+            color: var(--success);
+            border: 1px solid rgba(0, 255, 157, 0.25);
+            flex-shrink: 0;
+        }
+
+        .model-card-list-loading {
+            padding: 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Modal footer */
+        .modal-footer {
+            padding: 16px 32px 28px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-footer .btn {
+            min-width: 110px;
+            justify-content: center;
+        }
+
+        .modal-btn-cancel {
+            background: rgba(139, 147, 167, 0.1);
+            color: var(--text-muted);
+            border: 1px solid rgba(139, 147, 167, 0.2);
+        }
+
+        .modal-btn-cancel:hover {
+            background: rgba(139, 147, 167, 0.18);
+            color: var(--text-primary);
+        }
+
+        .modal-btn-create {
+            background: linear-gradient(135deg, var(--plasma-orange), #ff8c61);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.25);
+            min-width: 160px;
+        }
+
+        .modal-btn-create:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.35);
+        }
+
+        .modal-btn-create:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .modal-btn-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        /* Divider */
+        .modal-divider {
+            height: 1px;
+            background: rgba(139, 147, 167, 0.12);
+            margin: 0 32px;
+        }
+
+        /* WebSocket Controls */
+        .ws-controls {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(0, 78, 137, 0.1);
+            border: 1px solid rgba(0, 78, 137, 0.3);
+            border-radius: 16px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .ws-status-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .ws-status-panel .status-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .ws-status-panel .status-row label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .ws-status {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .ws-status.status-connected {
+            background: rgba(0, 255, 157, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+            box-shadow: 0 0 15px rgba(0, 255, 157, 0.3);
+        }
+
+        .ws-status.status-disconnected {
+            background: rgba(255, 87, 87, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .ws-status.status-error {
+            background: rgba(255, 217, 61, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .ws-status-panel .button-group {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        /* Device Pairing Notification */
+        .pairing-notification {
+            margin-top: 1rem;
+            padding: 1.25rem;
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+            border-radius: 12px;
+            animation: slideDown 0.4s ease;
+        }
+
+        .pairing-notification .notification-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .pairing-notification .icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .pairing-notification .message {
+            flex: 1;
+        }
+
+        .pairing-notification .message strong {
+            display: block;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+        }
+
+        .pairing-notification .message p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .pairing-notification .btn {
+            flex-shrink: 0;
+        }
+
+        /* Device Approval Status */
+        .approval-status-message {
+            padding: 0.875rem 1.125rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            font-weight: 500;
+            animation: slideDown 0.3s ease;
+        }
+
+        .approval-status-message.success {
+            background: rgba(0, 255, 157, 0.1);
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            color: var(--success);
+        }
+
+        .approval-status-message.error {
+            background: rgba(255, 87, 87, 0.1);
+            border: 1px solid rgba(255, 87, 87, 0.3);
+            color: var(--danger);
+        }
+
+        .approval-status-message.warning {
+            background: rgba(255, 217, 61, 0.1);
+            border: 1px solid rgba(255, 217, 61, 0.3);
+            color: var(--warning);
+        }
+
+        /* Responsive */
+        @media (max-width: 560px) {
+            .modal-card {
+                width: calc(100vw - 24px);
+                max-height: calc(100vh - 40px);
+                border-radius: 16px;
+            }
+
+            .modal-header, .modal-body { padding-left: 20px; padding-right: 20px; }
+            .modal-footer { padding-left: 20px; padding-right: 20px; }
+            .modal-divider { margin-left: 20px; margin-right: 20px; }
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 16px;
+                padding: 20px;
+            }
+
+            main {
+                padding: 24px;
+            }
+
+            .actions-bar {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .instance-details {
+                grid-template-columns: 1fr;
+            }
+
+            .instance-actions {
+                flex-direction: column;
+            }
+
+            .instance-card-large {
+                padding: 28px;
+            }
+
+        }
+    </style>
+
+    <!-- Environment Configuration (injected by Flask) -->
+    <script>
+        window.__ENV__ = {
+            // Session-based authentication (no Cognito config needed)
+        };
+    </script>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <h1>🦞 OpenClaw Dashboard</h1>
+        </div>
+        <div class="header-right">
+            <span id="user-email" class="user-info"></span>
+            <button id="logout-btn" class="btn btn-secondary">Logout</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="actions-bar">
+            <button id="create-instance-btn" class="btn btn-primary">
+                <span>➕</span> Create OpenClaw Instance
+            </button>
+            <button id="refresh-btn" class="btn btn-secondary">
+                <span>🔄</span> Refresh
+            </button>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Loading your instances...</p>
+        </div>
+
+        <div id="error-message" class="error-banner hidden"></div>
+
+        <div id="instances-container">
+            <!-- Empty State -->
+            <div id="empty-state" class="empty-state hidden">
+                <div class="empty-icon">📦</div>
+                <h2>No OpenClaw Instances</h2>
+                <p>Get started by creating your first OpenClaw instance</p>
+                <button class="btn btn-primary btn-lg" id="empty-state-create-btn">
+                    <span>➕</span> Create Instance
+                </button>
+            </div>
+
+            <!-- Instances Grid -->
+            <div id="instances-grid" class="instances-grid hidden">
+                <!-- Instance cards will be dynamically inserted here by JavaScript -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Create Instance Modal (outside <main> to avoid stacking context issues) -->
+    <div class="modal-backdrop" id="create-modal">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">🦞 Create OpenClaw Instance</div>
+                <div class="modal-subtitle">Configure your instance before launching</div>
+            </div>
+
+            <div class="modal-body">
+                <!-- Provider Section -->
+                <div class="modal-section">
+                    <div class="modal-section-label">Provider</div>
+                    <div class="modal-toggle-group" id="modal-provider-group">
+                        <button class="modal-toggle-btn active" data-provider="bedrock">☁️ Bedrock</button>
+                        <button class="modal-toggle-btn" data-provider="siliconflow">🤖 SiliconFlow</button>
+                    </div>
+                    <div class="modal-apikey-row" id="modal-apikey-row">
+                        <input type="password" class="modal-apikey-input" id="modal-apikey"
+                               placeholder="SiliconFlow API Key (sk-...)" autocomplete="off" />
+                    </div>
+                </div>
+
+                <div class="modal-divider"></div>
+
+                <!-- Model Section -->
+                <div class="modal-section" style="margin-top:24px">
+                    <div class="modal-section-label">Model</div>
+                    <div class="model-card-list" id="modal-model-list">
+                        <div class="model-card-list-loading">Loading models...</div>
+                    </div>
+                </div>
+
+                <div class="modal-divider"></div>
+
+                <!-- Runtime Section -->
+                <div class="modal-section" style="margin-top:24px">
+                    <div class="modal-section-label">Runtime</div>
+                    <div class="modal-toggle-group" id="modal-runtime-group">
+                        <button class="modal-toggle-btn active" data-runtime="runc">📦 Standard</button>
+                        <button class="modal-toggle-btn" data-runtime="kata-fc">🛡️ Secure VM</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn modal-btn-cancel" id="modal-cancel-btn">Cancel</button>
+                <button class="btn modal-btn-create" id="modal-create-btn">Create Instance</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dynamically load scripts with correct path prefix
+        (function() {
+            const basePath = window.location.pathname.startsWith('/prod') ? '/prod' : '';
+            const scripts = ['config.js', 'auth.js', 'api.js', 'dashboard.js', 'billing.js'];
+
+            function loadScript(index) {
+                if (index >= scripts.length) {
+                    // All scripts loaded, initialize dashboard
+                    console.log('All scripts loaded, initializing dashboard...');
+                    if (typeof Dashboard !== 'undefined') {
+                        Dashboard.init();
+                    } else {
+                        console.error('Dashboard object not found after loading scripts');
+                    }
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = basePath + '/static/js/' + scripts[index];
+                script.onload = () => loadScript(index + 1);
+                script.onerror = () => console.error('Failed to load:', scripts[index]);
+                document.body.appendChild(script);
+            }
+
+            loadScript(0);
+        })();
+    </script>
+</body>
+</html>
