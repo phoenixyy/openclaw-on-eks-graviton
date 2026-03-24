@@ -317,7 +317,10 @@ class FoundationStack(Stack):
             resources=["*"],
         ))
 
-        # Mutating — scoped by tag condition
+        # Mutating — no tag condition (Karpenter v1.x does not pass RequestTag)
+        # [FIX] Synced from runtime fix: Karpenter v1.9.0 doesn't send
+        # aws:RequestTag, so tag-scoped conditions cause permission denied.
+        # Using official Karpenter v1 recommended policy without tag conditions.
         karpenter_controller_role.add_to_policy(iam.PolicyStatement(
             sid="KarpenterMutating",
             effect=iam.Effect.ALLOW,
@@ -330,27 +333,6 @@ class FoundationStack(Stack):
                 "ec2:CreateTags",
             ],
             resources=["*"],
-            conditions={
-                "StringEquals": {
-                    f"aws:RequestTag/karpenter.sh/managed-by": cfg.cluster.name,
-                },
-            },
-        ))
-
-        # Also allow tagging already-managed resources
-        karpenter_controller_role.add_to_policy(iam.PolicyStatement(
-            sid="KarpenterTagScoped",
-            effect=iam.Effect.ALLOW,
-            actions=[
-                "ec2:TerminateInstances",
-                "ec2:DeleteLaunchTemplate",
-            ],
-            resources=["*"],
-            conditions={
-                "StringEquals": {
-                    f"aws:ResourceTag/karpenter.sh/managed-by": cfg.cluster.name,
-                },
-            },
         ))
 
         # IAM Role for Karpenter-managed nodes
