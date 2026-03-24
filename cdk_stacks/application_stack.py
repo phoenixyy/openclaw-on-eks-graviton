@@ -9,7 +9,7 @@ Resources created:
 - Bedrock IAM Role (Pod Identity template for agent instances)
 - PostgreSQL (StatefulSet with gp2 PVC)
 - Provisioning Service (Deployment + RBAC + ConfigMap)
-- ALB Ingress (internet-facing, shared ALB group)
+- ALB Ingress (internal, shared ALB group — accessed via CloudFront VPC Origin)
 
 ⚠️ CDK Cross-Stack Note:
   When ApplicationStack references FoundationStack.cluster, calling
@@ -512,9 +512,7 @@ class ApplicationStack(Stack):
                 "OPENCLAW_IMG_REPO": "ghcr.io/open-claw",
                 "OPENCLAW_STORAGE_CLASS": "efs-sc",
                 "OPENCLAW_MODEL": cfg.bedrock.default_model,
-                # Public ALB subnets for OpenClaw instance Ingress
-                # Required by ALB Controller to resolve subnets for internet-facing ALB
-                "PUBLIC_ALB_SUBNETS": cfg.network.public_alb_subnets,
+                # Internal ALB for OpenClaw instances (accessed via CloudFront VPC Origin)
                 "USE_PUBLIC_ALB": "true",
             },
         })

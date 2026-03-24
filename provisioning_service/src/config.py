@@ -152,11 +152,9 @@ class Config:
     # Public ALB Ingress annotations（共享 ALB 模式）
     # Instance Ingress must match provisioning-public Ingress: same group, scheme, subnets, security-groups
     PUBLIC_ALB_INGRESS_ANNOTATIONS = {
-        "alb.ingress.kubernetes.io/scheme": "internet-facing",
+        "alb.ingress.kubernetes.io/scheme": "internal",
         "alb.ingress.kubernetes.io/target-type": "ip",
         "alb.ingress.kubernetes.io/group.name": os.environ.get('PUBLIC_ALB_GROUP_NAME', 'openclaw-shared-instances'),
-        "alb.ingress.kubernetes.io/subnets": os.environ.get('PUBLIC_ALB_SUBNETS', ''),
-        "alb.ingress.kubernetes.io/security-groups": os.environ.get('PUBLIC_ALB_SECURITY_GROUPS', ''),
         "alb.ingress.kubernetes.io/healthcheck-protocol": "HTTP",
         "alb.ingress.kubernetes.io/success-codes": "200,404",
         "alb.ingress.kubernetes.io/target-group-attributes": (
