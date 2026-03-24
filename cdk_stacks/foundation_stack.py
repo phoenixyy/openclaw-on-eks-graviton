@@ -14,6 +14,7 @@ from constructs import Construct
 from aws_cdk import (
     Stack,
     CfnOutput,
+    Duration,
     RemovalPolicy,
     Tags,
     aws_ec2 as ec2,
@@ -30,24 +31,39 @@ from .config import config
 def _make_pod_identity_role(scope, id: str, description: str) -> iam.Role:
     """Create IAM Role for EKS Pod Identity with correct trust policy.
     
-    Pod Identity requires both sts:AssumeRole AND sts:TagSession in the
-    trust policy. CDK's ServicePrincipal only adds AssumeRole, causing
-    PodIdentityAssociation to fail with 'Trust policy invalid'.
-    We add sts:TagSession after role creation.
+    Pod Identity requires sts:AssumeRole AND sts:TagSession in a SINGLE
+    trust policy statement. CDK's ServicePrincipal only adds AssumeRole
+    as a separate statement, which EKS rejects as 'Trust policy invalid'.
+    
+    Fix: Use CompositePrincipal is not needed — instead, construct the
+    trust policy document manually with both actions in one statement.
     """
+    trust_policy = iam.PolicyDocument(
+        statements=[
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                principals=[iam.ServicePrincipal("pods.eks.amazonaws.com")],
+                actions=["sts:AssumeRole", "sts:TagSession"],
+            ),
+        ],
+    )
     role = iam.Role(
         scope, id,
-        assumed_by=iam.ServicePrincipal("pods.eks.amazonaws.com"),
+        assumed_by=iam.ServicePrincipal("pods.eks.amazonaws.com"),  # placeholder, overridden below
         description=description,
     )
-    # Add sts:TagSession to trust policy (required by Pod Identity)
-    role.assume_role_policy.add_statements(
-        iam.PolicyStatement(
-            effect=iam.Effect.ALLOW,
-            principals=[iam.ServicePrincipal("pods.eks.amazonaws.com")],
-            actions=["sts:TagSession"],
-        ),
-    )
+    # Override the auto-generated trust policy with our correct single-statement version
+    cfn_role = role.node.default_child
+    cfn_role.add_property_override("AssumeRolePolicyDocument", {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {"Service": "pods.eks.amazonaws.com"},
+                "Action": ["sts:AssumeRole", "sts:TagSession"],
+            },
+        ],
+    })
     return role
 
 
@@ -242,6 +258,9 @@ class FoundationStack(Stack):
         # -------------------------------------------------------
         self._setup_alb_controller(cfg)
 
+        # Note: ALB webhook failurePolicy=Ignore avoids blocking Karpenter Service
+        # creation. No explicit dependency needed between Karpenter and ALB charts.
+
         # -------------------------------------------------------
         # Outputs
         # -------------------------------------------------------
@@ -288,9 +307,12 @@ class FoundationStack(Stack):
                 "ec2:DescribeLaunchTemplates",
                 "ec2:DescribeSecurityGroups",
                 "ec2:DescribeSubnets",
+                "ec2:DescribeSpotPriceHistory",
                 "pricing:GetProducts",
                 "ssm:GetParameter",
                 "eks:DescribeCluster",
+                "iam:ListInstanceProfiles",
+                "iam:GetInstanceProfile",
             ],
             resources=["*"],
         ))
@@ -378,16 +400,25 @@ class FoundationStack(Stack):
         )
 
         # Install Karpenter via Helm
-        self.cluster.add_helm_chart(
+        self._karpenter_chart = self.cluster.add_helm_chart(
             "Karpenter",
             chart="karpenter",
-            repository="oci://public.ecr.aws/karpenter",
+            repository="oci://public.ecr.aws/karpenter/karpenter",
             version=cfg.karpenter.version,
             namespace=karpenter_ns,
             values={
                 "settings": {
                     "clusterName": self.cluster.cluster_name,
                     "clusterEndpoint": self.cluster.cluster_endpoint,
+                },
+                "serviceAccount": {
+                    "create": True,
+                    "name": karpenter_sa,
+                },
+                "controller": {
+                    "env": [
+                        {"name": "AWS_REGION", "value": cfg.region},
+                    ],
                 },
                 "tolerations": [
                     {
@@ -529,7 +560,7 @@ class FoundationStack(Stack):
         )
 
         # [FIX S3] Pin Helm chart version
-        self.cluster.add_helm_chart(
+        self._alb_chart = self.cluster.add_helm_chart(
             "AlbController",
             chart="aws-load-balancer-controller",
             repository="https://aws.github.io/eks-charts",
@@ -537,9 +568,15 @@ class FoundationStack(Stack):
             namespace=alb_ns,
             values={
                 "clusterName": self.cluster.cluster_name,
+                "region": cfg.region,
+                "vpcId": self.vpc.vpc_id,
                 "serviceAccount": {
                     "create": True,
                     "name": alb_sa,
+                },
+                # Avoid blocking other Service creates while ALB Pod is starting
+                "serviceMutatorWebhookConfig": {
+                    "failurePolicy": "Ignore",
                 },
                 "nodeSelector": {
                     "role": "system",

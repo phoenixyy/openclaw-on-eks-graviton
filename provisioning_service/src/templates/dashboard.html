@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <h1>🦞 OpenClaw Dashboard</h1>
+        </div>
+        <div class="header-right">
+            <span id="user-email" class="user-info"></span>
+            <button id="logout-btn" class="btn btn-secondary">Logout</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="actions-bar">
+            <button id="create-instance-btn" class="btn btn-primary">
+                <span>➕</span> Create OpenClaw Instance
+            </button>
+            <button id="refresh-btn" class="btn btn-secondary">
+                <span>🔄</span> Refresh
+            </button>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Loading your instance...</p>
+        </div>
+
+        <div id="error-message" class="error-banner hidden"></div>
+
+        <div id="content-container">
+            <!-- Empty State -->
+            <div id="empty-state" class="empty-state hidden">
+                <div class="empty-icon">📦</div>
+                <h2>No OpenClaw Instances Yet</h2>
+                <p>Get started by creating your first OpenClaw instance</p>
+                <button class="btn btn-primary btn-lg" onclick="document.getElementById('create-instance-btn').click()">
+                    <span>➕</span> Create Instance
+                </button>
+            </div>
+
+            <!-- Instances List -->
+            <div id="instances-list" class="hidden">
+                <div id="instances-container" class="instances-grid">
+                    <!-- Instance cards will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Instance Modal -->
+        <div id="create-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Create New Instance</h2>
+                    <button class="modal-close" id="modal-cancel-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <!-- Display Name -->
+                    <div class="modal-form-group">
+                        <label for="modal-display-name">Instance Name (Optional)</label>
+                        <input type="text" id="modal-display-name" class="modal-input" placeholder="e.g., My Dev Instance">
+                    </div>
+
+                    <!-- Provider Selection -->
+                    <div class="modal-form-group">
+                        <label>LLM Provider</label>
+                        <div id="modal-provider-group" class="modal-toggle-group">
+                            <button class="modal-toggle-btn active" data-provider="bedrock">AWS Bedrock</button>
+                            <button class="modal-toggle-btn" data-provider="siliconflow">SiliconFlow</button>
+                        </div>
+                    </div>
+
+                    <!-- Model Selection -->
+                    <div class="modal-form-group">
+                        <label>Model</label>
+                        <div id="modal-model-list" class="model-card-list">
+                            <div class="model-card-list-loading">Loading models...</div>
+                        </div>
+                    </div>
+
+                    <!-- SiliconFlow API Key (hidden by default) -->
+                    <div id="modal-apikey-row" class="modal-form-group">
+                        <label for="modal-apikey">SiliconFlow API Key</label>
+                        <input type="password" id="modal-apikey" class="modal-input" placeholder="sk-...">
+                    </div>
+
+                    <!-- Runtime Selection -->
+                    <div class="modal-form-group">
+                        <label>Runtime</label>
+                        <div id="modal-runtime-group" class="modal-toggle-group">
+                            <button class="modal-toggle-btn active" data-runtime="runc">Standard (runc)</button>
+                            <button class="modal-toggle-btn" data-runtime="kata-qemu">Secure VM (Kata)</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="modal-cancel-btn" class="btn btn-secondary">Cancel</button>
+                    <button id="modal-create-btn" class="btn btn-primary">Create Instance</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/config.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

@@ -23,7 +23,7 @@ class ClusterConfig:
 @dataclass
 class KarpenterConfig:
     """Karpenter autoscaler settings for OpenClaw agent workloads."""
-    version: str = "1.3.0"
+    version: str = "1.9.0"
     # Instance families Karpenter can choose from (all Graviton)
     instance_families: List[str] = field(default_factory=lambda: [
         "c6g", "c7g",   # Compute-optimized Graviton
@@ -60,6 +60,9 @@ class NetworkConfig:
     vpc_cidr: str = "10.0.0.0/16"
     max_azs: int = 3
     nat_gateways: int = 1  # Cost optimization: 1 NAT for PoC, 3 for prod
+    # Public subnets for internet-facing ALB (used by OpenClaw instance Ingress)
+    # Populated after first deployment: cdk deploy creates VPC, then subnets are known
+    public_alb_subnets: str = "subnet-084f7074bc004c21d,subnet-0760cb4c6af25b1e8,subnet-0f29118ec1bdd6b55"
 
 
 @dataclass
@@ -74,7 +77,7 @@ class BedrockConfig:
 @dataclass
 class OperatorConfig:
     """OpenClaw Kubernetes Operator settings."""
-    chart_version: str = "0.22.2"
+    chart_version: str = "0.9.23"
     chart_repository: str = "oci://ghcr.io/openclaw-rocks/charts/openclaw-operator"
     namespace: str = "openclaw-operator-system"
 
@@ -92,7 +95,7 @@ class PlatformConfig:
     bedrock: BedrockConfig = field(default_factory=BedrockConfig)
     operator: OperatorConfig = field(default_factory=OperatorConfig)
     # Helm chart versions (pinned for reproducibility)
-    alb_controller_chart_version: str = "1.12.0"
+    alb_controller_chart_version: str = "1.9.2"
     # Tags applied to all resources
     tags: dict = field(default_factory=lambda: {
         "Project": "openclaw-on-eks-graviton",
