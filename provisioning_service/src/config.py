@@ -82,7 +82,7 @@ class Config:
     # Available Bedrock models for user selection
     BEDROCK_MODELS = [
         {'id': 'amazon-bedrock/jp.anthropic.claude-sonnet-4-5-20250929-v1:0', 'name': 'Claude Sonnet 4.5', 'provider_label': 'Anthropic', 'default': True},
-        {'id': 'amazon-bedrock/apac.amazon.nova-pro-v1:0', 'name': 'Amazon Nova Pro', 'provider_label': 'Amazon'},
+        {'id': 'amazon-bedrock/jp.amazon.nova-2-lite-v1:0', 'name': 'Amazon Nova 2 Lite', 'provider_label': 'Amazon'},
     ]
 
     # Available SiliconFlow models for user selection
@@ -123,7 +123,7 @@ class Config:
     INGRESS_ENABLED = os.environ.get('INGRESS_ENABLED', 'true').lower() == 'true'
     INGRESS_CLASS = os.environ.get('INGRESS_CLASS', 'alb')
     INGRESS_GROUP_NAME = os.environ.get('INGRESS_GROUP_NAME', 'openclaw-shared-instances')
-    INGRESS_SCHEME = os.environ.get('INGRESS_SCHEME', 'internal')  # Internal ALB（不暴露公网）
+    INGRESS_SCHEME = os.environ.get('INGRESS_SCHEME', 'internet-facing')  # Must match ALB group scheme
     INGRESS_TARGET_TYPE = os.environ.get('INGRESS_TARGET_TYPE', 'ip')  # IP mode for better performance
 
     # API Gateway 配置（用于构建外部访问 URL）
@@ -155,7 +155,7 @@ class Config:
     # Public ALB Ingress annotations（共享 ALB 模式）
     # Instance Ingress must match provisioning-public Ingress: same group, scheme, subnets, security-groups
     PUBLIC_ALB_INGRESS_ANNOTATIONS = {
-        "alb.ingress.kubernetes.io/scheme": "internal",
+        "alb.ingress.kubernetes.io/scheme": os.environ.get('INGRESS_SCHEME', 'internet-facing'),
         "alb.ingress.kubernetes.io/target-type": "ip",
         "alb.ingress.kubernetes.io/group.name": os.environ.get('PUBLIC_ALB_GROUP_NAME', 'openclaw-shared-instances'),
         "alb.ingress.kubernetes.io/healthcheck-protocol": "HTTP",
