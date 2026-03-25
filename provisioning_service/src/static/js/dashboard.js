@@ -160,6 +160,7 @@ const Dashboard = {
     currentInstances: [],
     refreshTimer: null,
     isDeleting: false,
+    isAdmin: false,
     wsManager: new WebSocketManager(),
 
     // Initialize dashboard
@@ -194,6 +195,9 @@ const Dashboard = {
 
                 // Setup auto-refresh
                 this.startAutoRefresh();
+
+                // Check admin status (non-blocking)
+                this.checkAdmin();
             })
             .catch(error => {
                 console.error('❌ Authentication check failed:', error);
@@ -214,6 +218,11 @@ const Dashboard = {
         document.getElementById('logout-btn').addEventListener('click', () => {
             this.handleLogout();
         });
+
+        // Admin buttons
+        document.getElementById('admin-btn').addEventListener('click', () => this.showAdminPanel());
+        document.getElementById('admin-refresh-btn').addEventListener('click', () => this.loadClusterData());
+        document.getElementById('admin-back-btn').addEventListener('click', () => this.hideAdminPanel());
 
         // Create instance button → open modal
         document.getElementById('create-instance-btn').addEventListener('click', () => {
@@ -319,7 +328,7 @@ const Dashboard = {
         // Reset create button
         const createBtn = document.getElementById('modal-create-btn');
         createBtn.disabled = false;
-        createBtn.innerHTML = 'Create Instance';
+        createBtn.innerHTML = 'Create Agent';
 
         // Populate model cards
         this.populateModelCards('bedrock');
@@ -437,7 +446,7 @@ const Dashboard = {
                 || msg.includes('401') || msg.includes('403')
                 || msg.includes('Not authenticated');
             if (!isExpected) {
-                this.showError(`Failed to load instances: ${msg}`);
+                this.showError(`Failed to load agents: ${msg}`);
             }
             this.showEmptyState();
         } finally {
@@ -488,6 +497,20 @@ const Dashboard = {
         const providerIcon = instance.provider === 'siliconflow' ? '🤖' : '☁️';
         const providerName = instance.provider === 'siliconflow' ? 'SiliconFlow' : 'Bedrock';
 
+        // Isolation badges
+        const isolation = instance.isolation || {};
+        const storageIsolation = isolation.storage || {};
+        const networkIsolation = isolation.network || {};
+        const storageBadgeClass = storageIsolation.enabled ? 'storage-ok' : 'not-configured';
+        const storageBadgeText = storageIsolation.enabled ? '🔒 Storage Isolated' : '🔒 Not Configured';
+        const networkBadgeClass = networkIsolation.enabled ? 'network-ok' : 'not-configured';
+        const networkBadgeText = networkIsolation.enabled ? '🛡️ Network Isolated' : '🛡️ Not Configured';
+        const isolationBadgesHtml = `
+            <div class="isolation-badges">
+                <span class="isolation-badge ${storageBadgeClass}">${storageBadgeText}</span>
+                <span class="isolation-badge ${networkBadgeClass}">${networkBadgeText}</span>
+            </div>`;
+
         // Format full ISO created date
         const createdDateISO = instance.created_at ? new Date(instance.created_at).toISOString() : 'Unknown';
 
@@ -509,7 +532,7 @@ const Dashboard = {
             </div>
             <div class="instance-card-body" data-expandable>
                 <div class="instance-info-row">
-                    <span class="instance-info-label">Instance ID</span>
+                    <span class="instance-info-label">Agent ID</span>
                     <span class="instance-info-value">${this.escapeHtml(instance.instance_id)}</span>
                 </div>
                 <div class="instance-info-row">
@@ -524,12 +547,13 @@ const Dashboard = {
                     <span class="instance-info-label">Created</span>
                     <span class="instance-info-value">${createdDate}</span>
                 </div>
+                ${isolationBadgesHtml}
                 <div class="expand-indicator"></div>
             </div>
             <div class="instance-details-section">
                 <div class="instance-details-content">
                     <div class="detail-row">
-                        <span class="detail-row-label">Instance ID (Full)</span>
+                        <span class="detail-row-label">Agent ID</span>
                         <span class="detail-row-value"><code>${this.escapeHtml(instance.instance_id)}</code></span>
                     </div>
                     <div class="detail-row">
@@ -625,13 +649,6 @@ const Dashboard = {
 
     // Handle create instance (called from modal Create button)
     async handleCreateInstance() {
-        // Multi-instance support - no longer check for existing instance
-        // if (this.currentInstances.length > 0) {
-        //     this.showError('You already have an instance. Please delete it first.');
-        //     this.closeCreateModal();
-        //     return;
-        // }
-
         const selectedProvider = this.modalSelectedProvider;
         const selectedModel = this.modalSelectedModel;
         const selectedRuntime = this.modalSelectedRuntime;
@@ -662,16 +679,94 @@ const Dashboard = {
 
             // Close modal and show success
             this.closeCreateModal();
-            this.showSuccess('Instance created successfully! Loading...');
+            this.showSuccess('Agent created! Waiting for it to appear...');
 
-            // Refresh after a delay
-            setTimeout(() => this.loadInstances(), 2000);
+            // Show provisioning placeholder card
+            const previousCount = this.currentInstances.length;
+            this.addProvisioningPlaceholder(selectedProvider, selectedModel);
+
+            // Poll /instances until new instance appears (max 30s, every 3s)
+            const maxAttempts = 10;
+            let attempt = 0;
+            const pollInterval = setInterval(async () => {
+                attempt++;
+                try {
+                    const instances = await API.getInstances();
+                    if (instances && instances.length > previousCount) {
+                        // New instance appeared — stop polling and refresh
+                        clearInterval(pollInterval);
+                        this.removeProvisioningPlaceholder();
+                        this.currentInstances = instances;
+                        this.showInstances(instances);
+                        this.showSuccess('Agent provisioned successfully!');
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Poll attempt failed:', e);
+                }
+                if (attempt >= maxAttempts) {
+                    clearInterval(pollInterval);
+                    this.removeProvisioningPlaceholder();
+                    // Final refresh — instance may have appeared on last poll
+                    this.loadInstances();
+                    this.showSuccess('Agent created. It may take a moment to appear.');
+                }
+            }, 3000);
         } catch (error) {
             console.error('Failed to create instance:', error);
-            this.showError(`Failed to create instance: ${error.message}`);
+            this.showError(`Failed to create agent: ${error.message}`);
             modalCreateBtn.disabled = false;
-            modalCreateBtn.innerHTML = 'Create Instance';
+            modalCreateBtn.innerHTML = 'Create Agent';
         }
+    },
+
+    // Add a provisioning placeholder card to the grid
+    addProvisioningPlaceholder(provider, model) {
+        const grid = document.getElementById('instances-grid');
+        const emptyState = document.getElementById('empty-state');
+
+        // Ensure grid is visible
+        emptyState.classList.add('hidden');
+        grid.classList.remove('hidden');
+
+        const placeholder = document.createElement('div');
+        placeholder.className = 'instance-card provisioning-placeholder';
+        placeholder.id = 'provisioning-placeholder';
+
+        const providerIcon = provider === 'siliconflow' ? '🤖' : '☁️';
+        const providerName = provider === 'siliconflow' ? 'SiliconFlow' : 'Bedrock';
+
+        placeholder.innerHTML = `
+            <div class="instance-card-header">
+                <h3 class="instance-card-title">New Agent</h3>
+                <span class="status-badge status-pending"><span class="provisioning-spinner"></span>Provisioning...</span>
+            </div>
+            <div class="instance-card-body">
+                <div class="instance-info-row">
+                    <span class="instance-info-label">Provider</span>
+                    <span class="instance-info-value">${providerIcon} ${providerName}</span>
+                </div>
+                <div class="instance-info-row">
+                    <span class="instance-info-label">Model</span>
+                    <span class="instance-info-value">${this.escapeHtml(model || 'Default')}</span>
+                </div>
+                <div class="instance-info-row">
+                    <span class="instance-info-label">Status</span>
+                    <span class="instance-info-value">Setting up namespace, network policies, and instance...</span>
+                </div>
+            </div>
+            <div class="instance-card-actions">
+                <button class="btn btn-success disabled" disabled><span>🔗</span> Connect</button>
+                <button class="btn btn-danger disabled" disabled><span>🗑️</span> Delete</button>
+            </div>
+        `;
+        grid.appendChild(placeholder);
+    },
+
+    // Remove the provisioning placeholder card
+    removeProvisioningPlaceholder() {
+        const placeholder = document.getElementById('provisioning-placeholder');
+        if (placeholder) placeholder.remove();
     },
 
     // Handle delete instance
@@ -681,7 +776,7 @@ const Dashboard = {
         }
 
         const confirmation = prompt(
-            `⚠️ WARNING: This will permanently delete instance "${instance.display_name || instance.instance_id}".\n\n` +
+            `⚠️ WARNING: This will permanently delete agent "${instance.display_name || instance.instance_id}".\n\n` +
             `Type "DELETE" to confirm:`
         );
 
@@ -710,13 +805,13 @@ const Dashboard = {
             await API.deleteInstance(instance.instance_id);
             console.log('Instance deleted:', instance.instance_id);
 
-            this.showSuccess('Instance deleted successfully!');
+            this.showSuccess('Agent deleted successfully!');
 
             // Refresh instances list after a delay
             setTimeout(() => this.loadInstances(), 2000);
         } catch (error) {
             console.error('Failed to delete instance:', error);
-            this.showError(`Failed to delete instance: ${error.message}`);
+            this.showError(`Failed to delete agent: ${error.message}`);
 
             // Restore card state
             if (card) {
@@ -731,7 +826,7 @@ const Dashboard = {
     // Handle connect to instance - open gateway in new tab
     async handleConnectInstance(instance) {
         if (!instance) {
-            this.showError('No instance selected');
+            this.showError('No agent selected');
             return;
         }
 
@@ -739,11 +834,24 @@ const Dashboard = {
         const gatewayUrl = instance.cloudfront_http_url;
 
         if (!gatewayUrl) {
-            this.showError('Gateway URL not available yet. Please wait for instance to be ready.');
+            this.showError('Gateway URL not available yet. Please wait for agent to be ready.');
             return;
         }
 
         try {
+            // Clear Control UI localStorage to prevent token collision between instances.
+            // Control UI stores gateway token in localStorage with fallback key
+            // "openclaw.control.settings.v1" which is shared across all instances,
+            // causing "token mismatch" when switching between different agents.
+            try {
+                localStorage.removeItem('openclaw.control.settings.v1');
+                localStorage.removeItem('openclaw.control.token.v1');
+                localStorage.removeItem('openclaw-device-identity-v1');
+                console.log('🧹 Cleared Control UI localStorage for clean connect');
+            } catch (e) {
+                console.warn('Could not clear localStorage:', e);
+            }
+
             // Open gateway in new tab
             window.open(gatewayUrl, '_blank');
             this.showSuccess(`Opening ${instance.display_name || instance.instance_id} in new tab...`);
@@ -812,7 +920,7 @@ const Dashboard = {
     // Handle approve device manually (auto-find pending request)
     async handleApproveDeviceManual() {
         if (!this.currentInstance) {
-            this.showError('No instance selected');
+            this.showError('No agent selected');
             return;
         }
 
@@ -955,6 +1063,95 @@ const Dashboard = {
                 this.loadInstances();
             }
         }, CONFIG.REFRESH_INTERVAL);
+    },
+
+    // ── Admin Panel Methods ──
+
+    async checkAdmin() {
+        try {
+            const resp = await fetch(API.getBaseURL() + '/admin/cluster', { credentials: 'same-origin' });
+            if (resp.ok) {
+                this.isAdmin = true;
+                const adminBtn = document.getElementById('admin-btn');
+                if (adminBtn) adminBtn.classList.remove('hidden');
+            }
+        } catch (e) {
+            // Not admin or endpoint unavailable — silently ignore
+        }
+    },
+
+    showAdminPanel() {
+        document.getElementById('instances-container').classList.add('hidden');
+        document.querySelector('.actions-bar').classList.add('hidden');
+        document.getElementById('admin-panel').classList.remove('hidden');
+        this.loadClusterData();
+    },
+
+    hideAdminPanel() {
+        document.getElementById('admin-panel').classList.add('hidden');
+        document.getElementById('instances-container').classList.remove('hidden');
+        document.querySelector('.actions-bar').classList.remove('hidden');
+    },
+
+    async loadClusterData() {
+        try {
+            const data = await API.request('/admin/cluster');
+            this.renderClusterOverview(data);
+        } catch (e) {
+            console.error('Failed to load cluster data:', e);
+        }
+    },
+
+    renderClusterOverview(data) {
+        // Update summary cards
+        document.getElementById('admin-instances-total').textContent = data.instances.total;
+        document.getElementById('admin-instances-detail').textContent =
+            `${data.instances.running} running / ${data.instances.pending} pending`;
+
+        document.getElementById('admin-nodes-total').textContent = data.nodes.total;
+        document.getElementById('admin-nodes-detail').textContent =
+            `${data.nodes.system} system / ${data.nodes.karpenter_managed} karpenter`;
+
+        document.getElementById('admin-pods-total').textContent = data.pods.total;
+        document.getElementById('admin-pods-detail').textContent =
+            `${data.pods.openclaw_pods} OpenClaw pods`;
+
+        // Render nodes table
+        const tbody = document.querySelector('#admin-nodes-table tbody');
+        tbody.innerHTML = '';
+        (data.nodes.details || []).forEach(node => {
+            const managedClass = node.managed_by === 'karpenter' ? 'karpenter-node' : '';
+            const row = document.createElement('tr');
+            row.className = managedClass;
+            row.innerHTML = `
+                <td><code>${this.escapeHtml(node.name)}</code></td>
+                <td>${this.escapeHtml(node.instance_type)}</td>
+                <td>${this.escapeHtml(node.capacity.cpu)}</td>
+                <td>${this.escapeHtml(node.capacity.memory)}</td>
+                <td>${node.pods_count}</td>
+                <td class="${node.cpu_percent != null && node.cpu_percent > 80 ? 'high-load' : ''}">${node.cpu_percent != null ? node.cpu_percent + '%' : '-'}</td>
+                <td class="${node.memory_percent != null && node.memory_percent > 80 ? 'high-load' : ''}">${node.memory_percent != null ? node.memory_percent + '%' : '-'}</td>
+                <td><span class="node-manager-badge ${node.managed_by}">${node.managed_by}</span></td>
+                <td><span class="status-badge status-${node.status.toLowerCase()}">${node.status}</span></td>
+                <td>${this.escapeHtml(node.age)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        // Render Karpenter events
+        const eventsContainer = document.getElementById('admin-karpenter-events');
+        const events = data.karpenter?.recent_events || [];
+        if (events.length === 0) {
+            eventsContainer.innerHTML = '<p class="text-muted">No recent Karpenter events</p>';
+        } else {
+            eventsContainer.innerHTML = events.map(e => `
+                <div class="karpenter-event">
+                    <span class="event-time">${new Date(e.timestamp).toLocaleTimeString()}</span>
+                    <span class="event-reason">${this.escapeHtml(e.reason)}</span>
+                    <span class="event-message">${this.escapeHtml(e.message)}</span>
+                </div>
+            `).join('');
+        }
     },
 
     // Stop auto-refresh

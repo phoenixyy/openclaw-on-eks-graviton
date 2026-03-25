@@ -1190,6 +1190,256 @@
             }
 
         }
+
+        /* Isolation badges */
+        .isolation-badges { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .isolation-badge {
+            font-size: 11px; padding: 3px 8px; border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .isolation-badge.storage-ok, .isolation-badge.network-ok {
+            background: rgba(0, 255, 157, 0.15); color: #00ff9d; border: 1px solid rgba(0, 255, 157, 0.3);
+        }
+        .isolation-badge.not-configured {
+            background: rgba(139, 147, 167, 0.15); color: #8b93a7; border: 1px solid rgba(139, 147, 167, 0.3);
+        }
+
+        /* Provisioning placeholder card */
+        .instance-card.provisioning-placeholder {
+            opacity: 0.7;
+            border: 1px dashed rgba(0, 255, 157, 0.4);
+        }
+        .provisioning-spinner {
+            display: inline-block;
+            width: 14px; height: 14px;
+            border: 2px solid rgba(0, 255, 157, 0.3);
+            border-top-color: #00ff9d;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Admin Panel Styles ── */
+        .admin-panel {
+            animation: fadeIn 0.3s ease;
+        }
+
+        .admin-panel.hidden {
+            display: none;
+        }
+
+        .admin-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .admin-header h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 24px;
+            color: var(--text-primary);
+        }
+
+        .admin-header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .admin-summary-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .summary-card {
+            background: var(--void-dark);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+
+        .summary-card:hover {
+            border-color: rgba(0, 212, 255, 0.4);
+        }
+
+        .summary-value {
+            font-family: 'Syne', sans-serif;
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--cyber-cyan);
+            line-height: 1.2;
+        }
+
+        .summary-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-detail {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .admin-section {
+            margin-bottom: 28px;
+        }
+
+        .admin-section h3 {
+            font-size: 16px;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .admin-table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .admin-table thead th {
+            background: var(--void-dark);
+            color: var(--text-muted);
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .admin-table tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.15s;
+        }
+
+        .admin-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .admin-table tbody td {
+            padding: 10px 14px;
+            color: var(--text-primary);
+        }
+
+        .admin-table tbody td code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--cyber-cyan);
+        }
+
+        .admin-table tbody tr.karpenter-node {
+            border-left: 3px solid var(--plasma-orange);
+        }
+
+        .high-load {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .node-manager-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .node-manager-badge.karpenter {
+            background: rgba(255, 107, 53, 0.2);
+            color: var(--plasma-orange);
+        }
+
+        .node-manager-badge.system {
+            background: rgba(0, 212, 255, 0.15);
+            color: var(--cyber-cyan);
+        }
+
+        .status-badge.status-ready {
+            background: rgba(0, 255, 157, 0.15);
+            color: var(--success);
+        }
+
+        .status-badge.status-notready {
+            background: rgba(255, 87, 87, 0.15);
+            color: var(--danger);
+        }
+
+        .karpenter-events {
+            background: var(--void-dark);
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .karpenter-events .text-muted {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .karpenter-event {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .karpenter-event:last-child {
+            border-bottom: none;
+        }
+
+        .event-time {
+            flex-shrink: 0;
+            width: 80px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .event-reason {
+            flex-shrink: 0;
+            width: 100px;
+            font-weight: 500;
+            font-size: 12px;
+            color: var(--plasma-orange);
+        }
+
+        .event-message {
+            font-size: 12px;
+            color: var(--text-primary);
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .admin-summary-row {
+                grid-template-columns: 1fr;
+            }
+            .admin-table {
+                font-size: 12px;
+            }
+            .admin-table thead th,
+            .admin-table tbody td {
+                padding: 8px 10px;
+            }
+        }
     </style>
 
     <!-- Environment Configuration (injected by Flask) -->
@@ -1206,6 +1456,7 @@
         </div>
         <div class="header-right">
             <span id="user-email" class="user-info"></span>
+            <button id="admin-btn" class="btn btn-secondary hidden">📊 Admin</button>
             <button id="logout-btn" class="btn btn-secondary">Logout</button>
         </div>
     </header>
@@ -1213,7 +1464,7 @@
     <main>
         <div class="actions-bar">
             <button id="create-instance-btn" class="btn btn-primary">
-                <span>➕</span> Create OpenClaw Instance
+                <span>➕</span> Create OpenClaw Agent
             </button>
             <button id="refresh-btn" class="btn btn-secondary">
                 <span>🔄</span> Refresh
@@ -1222,7 +1473,7 @@
 
         <div id="loading" class="loading hidden">
             <div class="spinner"></div>
-            <p>Loading your instances...</p>
+            <p>Loading your agents...</p>
         </div>
 
         <div id="error-message" class="error-banner hidden"></div>
@@ -1231,10 +1482,10 @@
             <!-- Empty State -->
             <div id="empty-state" class="empty-state hidden">
                 <div class="empty-icon">📦</div>
-                <h2>No OpenClaw Instances</h2>
-                <p>Get started by creating your first OpenClaw instance</p>
+                <h2>No OpenClaw Agents</h2>
+                <p>Get started by creating your first OpenClaw agent</p>
                 <button class="btn btn-primary btn-lg" id="empty-state-create-btn">
-                    <span>➕</span> Create Instance
+                    <span>➕</span> Create Agent
                 </button>
             </div>
 
@@ -1243,14 +1494,76 @@
                 <!-- Instance cards will be dynamically inserted here by JavaScript -->
             </div>
         </div>
+
+        <!-- Admin Panel (hidden by default, admin-only) -->
+        <div id="admin-panel" class="admin-panel hidden">
+            <div class="admin-header">
+                <h2>📊 Cluster Overview</h2>
+                <div class="admin-header-actions">
+                    <button id="admin-refresh-btn" class="btn btn-secondary">🔄 Refresh</button>
+                    <button id="admin-back-btn" class="btn btn-secondary">← Back to Dashboard</button>
+                </div>
+            </div>
+
+            <!-- Summary Cards Row -->
+            <div class="admin-summary-row">
+                <div class="summary-card">
+                    <div class="summary-value" id="admin-instances-total">-</div>
+                    <div class="summary-label">OpenClaw Agents</div>
+                    <div class="summary-detail" id="admin-instances-detail">- running / - pending</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value" id="admin-nodes-total">-</div>
+                    <div class="summary-label">EKS Nodes</div>
+                    <div class="summary-detail" id="admin-nodes-detail">- system / - karpenter</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value" id="admin-pods-total">-</div>
+                    <div class="summary-label">Total Pods</div>
+                    <div class="summary-detail" id="admin-pods-detail">- OpenClaw pods</div>
+                </div>
+            </div>
+
+            <!-- Nodes Table -->
+            <div class="admin-section">
+                <h3>🖥️ Nodes</h3>
+                <div class="admin-table-container">
+                    <table class="admin-table" id="admin-nodes-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>CPU</th>
+                                <th>Memory</th>
+                                <th>Pods</th>
+                                <th>CPU%</th>
+                                <th>Memory%</th>
+                                <th>Managed By</th>
+                                <th>Status</th>
+                                <th>Age</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Karpenter Events -->
+            <div class="admin-section">
+                <h3>⚡ Karpenter Activity</h3>
+                <div id="admin-karpenter-events" class="karpenter-events">
+                    <p class="text-muted">No recent events</p>
+                </div>
+            </div>
+        </div>
     </main>
 
     <!-- Create Instance Modal (outside <main> to avoid stacking context issues) -->
     <div class="modal-backdrop" id="create-modal">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <div class="modal-title">🦞 Create OpenClaw Instance</div>
-                <div class="modal-subtitle">Configure your instance before launching</div>
+                <div class="modal-title">🦞 Create OpenClaw Agent</div>
+                <div class="modal-subtitle">Configure your agent before launching</div>
             </div>
 
             <div class="modal-body">
@@ -1284,14 +1597,14 @@
                     <div class="modal-section-label">Runtime</div>
                     <div class="modal-toggle-group" id="modal-runtime-group">
                         <button class="modal-toggle-btn active" data-runtime="runc">📦 Standard</button>
-                        <button class="modal-toggle-btn" data-runtime="kata-fc">🛡️ Secure VM</button>
+                        <button class="modal-toggle-btn" data-runtime="kata-fc" disabled style="opacity:0.4;cursor:not-allowed">🛡️ Secure VM (Coming Soon)</button>
                     </div>
                 </div>
             </div>
 
             <div class="modal-footer">
                 <button class="btn modal-btn-cancel" id="modal-cancel-btn">Cancel</button>
-                <button class="btn modal-btn-create" id="modal-create-btn">Create Instance</button>
+                <button class="btn modal-btn-create" id="modal-create-btn">Create Agent</button>
             </div>
         </div>
     </div>
