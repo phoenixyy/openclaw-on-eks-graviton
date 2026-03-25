@@ -11,13 +11,14 @@ from app.utils.user_id import generate_user_id
 from app.config import Config
 from kubernetes.client.rest import ApiException
 import logging
+import re
 
 delete_bp = Blueprint('delete', __name__)
 logger = logging.getLogger(__name__)
 
-@delete_bp.route('/delete/<user_id>', methods=['DELETE'])
+@delete_bp.route('/delete/<identifier>', methods=['DELETE'])
 @require_auth
-def delete(user_id):
+def delete(identifier):
     """
     Delete an OpenClaw instance and its namespace
 
@@ -25,38 +26,27 @@ def delete(user_id):
     Authorization: Users can only delete their own instances
 
     Args:
-        user_id: User ID
-
-    Response (200 OK):
-    {
-        "status": "deleted",
-        "user_id": "7ec7606c",
-        "message": "Instance deleted successfully"
-    }
-
-    Response (403 Forbidden):
-    {
-        "error": "Forbidden: You can only delete your own instances"
-    }
-
-    Response (404 Not Found):
-    {
-        "error": "Instance not found"
-    }
+        identifier: User ID (08c2423c) or Instance ID (08c2423c-02)
     """
     try:
+        # Extract user_id from identifier for auth check
+        if re.match(r'^[0-9a-f]{8}-\d{2}$', identifier):
+            user_id = identifier[:8]
+        else:
+            user_id = identifier
+
         # Verify user can only delete their own instance
         user_email = session['user_email']
         authenticated_user_id = generate_user_id(user_email)
         if user_id != authenticated_user_id:
-            logger.warning(f"⚠️ Unauthorized delete attempt: {user_email} tried to delete user_id {user_id}")
+            logger.warning(f"⚠️ Unauthorized delete attempt: {user_email} tried to delete identifier {identifier}")
             return jsonify({
                 "error": "Forbidden: You can only delete your own instances"
             }), 403
 
-        namespace = f"openclaw-{user_id}"
+        namespace = f"openclaw-{identifier}"
 
-        logger.info(f"🗑️  Delete request for user: {user_id} ({user_email})")
+        logger.info(f"🗑️  Delete request for identifier: {identifier} ({user_email})")
 
         k8s_client = K8sClient()
 
@@ -65,7 +55,7 @@ def delete(user_id):
         iam_role_deleted = False
 
         if Config.USE_POD_IDENTITY:
-            service_account = f"openclaw-{user_id}"
+            service_account = f"openclaw-{identifier}"
 
             # Delete Pod Identity Associations
             logger.info(f"🔗 Deleting Pod Identity Associations for {namespace}/{service_account}")
@@ -108,6 +98,7 @@ def delete(user_id):
         response = {
             "status": "deleted",
             "user_id": user_id,
+            "instance_id": identifier,
             "namespace": namespace,
             "message": "Instance deleted successfully"
         }

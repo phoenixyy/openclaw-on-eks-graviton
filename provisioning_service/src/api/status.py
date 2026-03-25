@@ -5,56 +5,39 @@ from app.utils.session_auth import require_auth
 from app.utils.user_id import generate_user_id
 from kubernetes.client.rest import ApiException
 import logging
+import re
 
 status_bp = Blueprint('status', __name__)
 logger = logging.getLogger(__name__)
 
-@status_bp.route('/status/<user_id>', methods=['GET'])
+@status_bp.route('/status/<identifier>', methods=['GET'])
 @require_auth
-def status(user_id):
+def status(identifier):
     """
     Get OpenClaw instance status
 
-    Authentication: Requires valid session (user must be logged in)
-    Authorization: Users can only access their own instances
-
     Args:
-        user_id: User ID
-
-    Response (200 OK):
-    {
-        "user_id": "7ec7606c",
-        "namespace": "openclaw-7ec7606c",
-        "instance_name": "openclaw-7ec7606c",
-        "status": {
-            "phase": "Running",
-            "conditions": [...]
-        }
-    }
-
-    Response (403 Forbidden):
-    {
-        "error": "Forbidden: You can only access your own instances"
-    }
-
-    Response (404 Not Found):
-    {
-        "error": "Instance not found"
-    }
+        identifier: User ID (08c2423c) or Instance ID (08c2423c-02)
     """
     try:
+        # Extract user_id from identifier for auth check
+        if re.match(r'^[0-9a-f]{8}-\d{2}$', identifier):
+            user_id = identifier[:8]
+        else:
+            user_id = identifier
+
         # Verify user can only access their own instance
         user_email = session['user_email']
         authenticated_user_id = generate_user_id(user_email)
         if user_id != authenticated_user_id:
-            logger.warning(f"⚠️ Unauthorized access attempt: {user_email} tried to access user_id {user_id}")
+            logger.warning(f"⚠️ Unauthorized access attempt: {user_email} tried to access identifier {identifier}")
             return jsonify({
                 "error": "Forbidden: You can only access your own instances"
             }), 403
 
-        namespace = f"openclaw-{user_id}"
-        instance_name = f"openclaw-{user_id}"
-        instance_id = user_id  # instance_id is the unique identifier for the instance
+        namespace = f"openclaw-{identifier}"
+        instance_name = f"openclaw-{identifier}"
+        instance_id = identifier
 
         k8s_client = K8sClient()
 
@@ -365,6 +348,32 @@ def list_instances():
                         except:
                             pass
 
+                    # Check isolation status
+                    isolation_storage = {"enabled": False, "type": None, "pvc_name": None}
+                    isolation_network = {"enabled": False, "type": None, "policy_name": None}
+
+                    try:
+                        pvcs = k8s_client.core_v1.list_namespaced_persistent_volume_claim(namespace=namespace)
+                        if pvcs.items:
+                            isolation_storage = {
+                                "enabled": True,
+                                "type": "EFS Access Point",
+                                "pvc_name": pvcs.items[0].metadata.name
+                            }
+                    except Exception:
+                        pass
+
+                    try:
+                        netpols = k8s_client.networking_v1.list_namespaced_network_policy(namespace=namespace)
+                        if netpols.items:
+                            isolation_network = {
+                                "enabled": True,
+                                "type": "NetworkPolicy + eBPF",
+                                "policy_name": netpols.items[0].metadata.name
+                            }
+                    except Exception:
+                        pass
+
                     # Extract display name from labels or use instance_id
                     display_name = labels.get('openclaw.rocks/display-name', instance_id)
 
@@ -377,7 +386,11 @@ def list_instances():
                         "model": model_name,
                         "created_at": created_at,
                         "cloudfront_http_url": cloudfront_http_url,
-                        "ready_for_connect": ready_for_connect
+                        "ready_for_connect": ready_for_connect,
+                        "isolation": {
+                            "storage": isolation_storage,
+                            "network": isolation_network
+                        }
                     })
 
             except ApiException as e:

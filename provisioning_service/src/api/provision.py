@@ -11,6 +11,7 @@ from app.utils.validator import validate_email
 from app.utils.session_auth import require_auth
 from app.config import Config
 import logging
+import re
 
 provision_bp = Blueprint('provision', __name__)
 logger = logging.getLogger(__name__)
@@ -93,16 +94,67 @@ def provision():
 
         # Generate user_id
         user_id = generate_user_id(user_email)
-        namespace = f"openclaw-{user_id}"
-        instance_name = f"openclaw-{user_id}"
 
-        logger.info(f"📥 Provisioning request: {user_email} (user_id: {user_id}, provider: {provider})")
+        # Get display_name from request
+        display_name = data.get('display_name', None)
+
+        logger.info(f"📥 Provisioning multi-instance: {user_email} → determining instance_id")
 
         # Initialize K8s client
         k8s_client = K8sClient()
 
-        # Create Namespace
-        ns, ns_created = create_namespace(k8s_client, user_id)
+        # Determine next sequence number by listing existing namespaces for this user
+        try:
+            existing_ns = k8s_client.core_v1.list_namespace(
+                label_selector=f"openclaw.rocks/user-id={user_id}"
+            )
+            existing_count = len(existing_ns.items) if existing_ns.items else 0
+        except Exception as e:
+            logger.warning(f"⚠️ Could not list namespaces for user {user_id}: {e}")
+            existing_count = 0
+
+        if existing_count == 0:
+            # No existing instances — check if bare namespace exists (legacy)
+            try:
+                k8s_client.core_v1.read_namespace(name=f"openclaw-{user_id}")
+                # Bare namespace exists but without label — count it
+                existing_count = 1
+            except Exception:
+                pass
+
+        if existing_count == 0:
+            # First instance ever — use bare user_id for backward compat? No, use sequence.
+            # Actually per spec: next_seq = count + 1, minimum 2 if bare exists
+            next_seq = 2
+            instance_id = f"{user_id}-{next_seq:02d}"
+        else:
+            next_seq = existing_count + 1
+            if next_seq < 2:
+                next_seq = 2
+            instance_id = f"{user_id}-{next_seq:02d}"
+
+        namespace = f"openclaw-{instance_id}"
+        instance_name = f"openclaw-{instance_id}"
+
+        # Default display_name: use friendly model name from config, not raw model ID
+        if not display_name:
+            friendly_name = None
+            if selected_model:
+                # Look up friendly name from BEDROCK_MODELS / SILICONFLOW_MODELS
+                model_list = Config.BEDROCK_MODELS if provider == 'bedrock' else Config.SILICONFLOW_MODELS
+                for m in model_list:
+                    if m['id'] == selected_model:
+                        friendly_name = m['name']
+                        break
+                if not friendly_name:
+                    # Fallback: extract last part and clean up
+                    friendly_name = selected_model.split('/')[-1].split(':')[0]
+            display_name = f"{friendly_name or 'Agent'} #{next_seq:02d}"
+
+        logger.info(f"📥 Provisioning multi-instance: {user_email} → {instance_id} (display: {display_name})")
+
+        # Create Namespace (pass instance_id for naming, user_id for label)
+        ns, ns_created = create_namespace(k8s_client, instance_id, user_id=user_id)
 
         # Create ResourceQuota - DISABLED: operator's init-config container lacks resources spec
         # quota, quota_created = create_resource_quota(k8s_client, namespace)
@@ -119,7 +171,7 @@ def provision():
             logger.info(f"🔐 Using shared Bedrock IAM Role: {role_arn}")
 
             # Create Pod Identity Association (link SA to shared Role)
-            service_account = f"openclaw-{user_id}"
+            service_account = f"openclaw-{instance_id}"
             logger.info(f"🔗 Creating Pod Identity Association: {namespace}/{service_account} → {role_arn}")
 
             pod_identity_association_id = create_pod_identity_association(
@@ -144,7 +196,7 @@ def provision():
         # Create OpenClawInstance
         instance, instance_created = create_openclaw_instance(
             k8s_client,
-            user_id,
+            instance_id,
             namespace,
             user_email,
             cognito_sub=None,  # No longer using Cognito
@@ -152,7 +204,9 @@ def provision():
             role_arn=role_arn,
             provider=provider,
             siliconflow_api_key=siliconflow_api_key,
-            model=selected_model
+            model=selected_model,
+            user_id=user_id,
+            display_name=display_name
         )
 
         # Build response
@@ -162,8 +216,10 @@ def provision():
         response = {
             "status": status,
             "user_id": user_id,
+            "instance_id": instance_id,
             "namespace": namespace,
             "instance_name": instance_name,
+            "display_name": display_name,
             "gateway_endpoint": gateway_endpoint,
             "message": f"Instance {status} successfully",
             "resources_created": {

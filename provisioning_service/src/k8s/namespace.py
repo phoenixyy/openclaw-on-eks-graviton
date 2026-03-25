@@ -4,18 +4,21 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def create_namespace(k8s_client, user_id):
+def create_namespace(k8s_client, instance_id, user_id=None):
     """
-    Create a Namespace for the user
+    Create a Namespace for the instance
 
     Args:
         k8s_client: K8sClient instance
-        user_id: User ID
+        instance_id: Instance ID (e.g. '08c2423c' or '08c2423c-02')
+        user_id: User ID for labeling (defaults to instance_id for backward compat)
 
     Returns:
         Tuple of (namespace, created)
     """
-    namespace_name = f"openclaw-{user_id}"
+    if user_id is None:
+        user_id = instance_id
+    namespace_name = f"openclaw-{instance_id}"
 
     namespace = client.V1Namespace(
         metadata=client.V1ObjectMeta(

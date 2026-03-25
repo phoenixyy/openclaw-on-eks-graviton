@@ -7,13 +7,13 @@ import os
 
 logger = logging.getLogger(__name__)
 
-def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito_sub=None, custom_config=None, role_arn=None, provider='bedrock', siliconflow_api_key=None, model=None):
+def create_openclaw_instance(k8s_client, instance_id, namespace, user_email, cognito_sub=None, custom_config=None, role_arn=None, provider='bedrock', siliconflow_api_key=None, model=None, user_id=None, display_name=None):
     """
     Create an OpenClawInstance CRD
 
     Args:
         k8s_client: K8sClient instance
-        user_id: User ID
+        instance_id: Instance ID for naming (e.g. '08c2423c' or '08c2423c-02')
         namespace: Namespace name
         user_email: User email address
         cognito_sub: Cognito Sub ID (optional)
@@ -22,11 +22,15 @@ def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito
         provider: LLM provider - 'bedrock' or 'siliconflow' (default: 'bedrock')
         siliconflow_api_key: SiliconFlow API key (required when provider='siliconflow')
         model: Model ID override (optional, works for both bedrock and siliconflow)
+        user_id: User ID for labels (defaults to instance_id for backward compat)
+        display_name: Display name for the instance (optional)
 
     Returns:
         Tuple of (instance, created)
     """
-    instance_name = f"openclaw-{user_id}"
+    if user_id is None:
+        user_id = instance_id
+    instance_name = f"openclaw-{instance_id}"
 
     # Merge configuration (custom_config overrides defaults)
     config = copy.deepcopy(Config.OPENCLAW_DEFAULTS)
@@ -43,6 +47,7 @@ def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito
         config_raw = {
             "gateway": {
                 "controlUi": {
+                    "basePath": f"/instance/{instance_id}",
                     "allowedOrigins": Config.GATEWAY_CONFIG["allowedOrigins"],
                     "dangerouslyDisableDeviceAuth": True
                 },
@@ -78,6 +83,7 @@ def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito
         config_raw = {
             "gateway": {
                 "controlUi": {
+                    "basePath": f"/instance/{instance_id}",
                     "allowedOrigins": Config.GATEWAY_CONFIG["allowedOrigins"],
                     "dangerouslyDisableDeviceAuth": True
                 },
@@ -114,8 +120,8 @@ def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito
                                 "maxTokens": 8192
                             },
                             {
-                                "id": "apac.amazon.nova-pro-v1:0",
-                                "name": "Amazon Nova Pro",
+                                "id": "jp.amazon.nova-2-lite-v1:0",
+                                "name": "Amazon Nova 2 Lite",
                                 "input": ["text", "image"],
                                 "contextWindow": 300000,
                                 "maxTokens": 5120
@@ -132,7 +138,9 @@ def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito
                 "defaults": {
                     "model": {
                         "primary": bedrock_model
-                    }
+                    },
+                    # Disable thinking/reasoning for models that don't support it (e.g. Nova Pro)
+                    **({"thinkingDefault": "off"} if "nova" in bedrock_model.lower() else {})
                 }
             }
         }
@@ -143,6 +151,15 @@ def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito
         "app.kubernetes.io/managed-by": "openclaw-provisioning-service",
         "openclaw.rocks/llm-provider": provider
     }
+    if display_name:
+        # Kubernetes labels: max 63 chars, only alphanumeric, '-', '_', '.'
+        # Sanitize: replace invalid chars (like ':') with '-'
+        import re as _re
+        sanitized = _re.sub(r'[^A-Za-z0-9._-]', '-', display_name)[:63]
+        # Must start and end with alphanumeric
+        sanitized = sanitized.strip('-_.')
+        if sanitized:
+            labels["openclaw.rocks/display-name"] = sanitized
 
     # Build RBAC section
     rbac_config = {
@@ -189,7 +206,7 @@ def create_openclaw_instance(k8s_client, user_id, namespace, user_email, cognito
                 "service": {
                     "type": "ClusterIP"
                 },
-                "ingress": _build_ingress_config(user_id) if Config.INGRESS_ENABLED else {"enabled": False}
+                "ingress": _build_ingress_config(instance_id) if Config.INGRESS_ENABLED else {"enabled": False}
             },
             "security": {
                 "podSecurityContext": {
